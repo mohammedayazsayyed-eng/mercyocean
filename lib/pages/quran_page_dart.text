@@ -1,0 +1,806 @@
+﻿import 'package:flutter/material.dart';
+import '../pages/inline_audio_player.dart';
+import '../service/api_service.dart';
+import '../models/quran_model.dart';
+import '../config/app_theme.dart';
+
+class QuranPage extends StatefulWidget {
+  const QuranPage({super.key});
+
+  @override
+  State<QuranPage> createState() => _QuranPageState();
+}
+
+class _QuranPageState extends State<QuranPage> {
+  final ApiService _apiService = ApiService();
+  late Future<List<Surah>> _surahListFuture;
+
+  // Featured surahs: Sajdah (32), Yaseen (36), Mulk (67), Naba (78), Kahf (18)
+  final List<int> _featuredSurahNumbers = [32, 36, 67, 78, 18];
+
+  @override
+  void initState() {
+    super.initState();
+    ApiService().getAllDuas().catchError((_) {}); // ← ADD
+    ApiService().getAllSurahs().catchError((_) {}); // ← ADD
+    _surahListFuture = _fetchFeaturedSurahs();
+  }
+
+  /// Fetch only the featured surahs
+  Future<List<Surah>> _fetchFeaturedSurahs() async {
+    try {
+      final surahs = <Surah>[];
+      for (int surahNumber in _featuredSurahNumbers) {
+        final response = await _apiService.getSurahDetail(surahNumber);
+        if (response.surah != null) {
+          surahs.add(response.surah!);
+        }
+      }
+      return surahs;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Scaffold(
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: isDark
+              ? AppGradients.darkBackground
+              : AppGradients.lightBackground,
+        ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              _buildAppBar(context, isDark),
+              Expanded(child: _buildBody(context, isDark)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ── App Bar ─────────────────────────────────────────────────
+  Widget _buildAppBar(BuildContext context, bool isDark) {
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.darkNavBar : AppColors.lightNavBar,
+        borderRadius: const BorderRadius.only(
+          bottomLeft: Radius.circular(24),
+          bottomRight: Radius.circular(24),
+        ),
+        boxShadow: isDark
+            ? AppShadows.navBarShadowDark
+            : AppShadows.navBarShadowLight,
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
+        children: [
+          GestureDetector(
+            onTap: () => Navigator.pop(context),
+            child: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.darkSurface : AppColors.lightSurface,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: isDark
+                    ? AppShadows.cardShadowDark
+                    : AppShadows.cardShadowLight,
+              ),
+              child: Icon(
+                Icons.arrow_back_ios_new_rounded,
+                size: 18,
+                color: isDark ? AppColors.darkText : AppColors.lightText,
+              ),
+            ),
+          ),
+          const Spacer(),
+          ShaderMask(
+            shaderCallback: (bounds) =>
+                AppGradients.goldShimmer.createShader(bounds),
+            child: const Text(
+              'Surah',
+              style: TextStyle(
+                fontFamily: 'Poppins',
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
+              ),
+            ),
+          ),
+          const Spacer(),
+          const SizedBox(width: 42),
+        ],
+      ),
+    );
+  }
+
+  // ── Body ─────────────────────────────────────────────────────
+  Widget _buildBody(BuildContext context, bool isDark) {
+    return FutureBuilder<List<Surah>>(
+      future: _surahListFuture,
+      builder: (context, snapshot) {
+        // Loading
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(
+            child: CircularProgressIndicator(color: AppColors.gold),
+          );
+        }
+
+        // Error
+        if (snapshot.hasError) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(32),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(
+                    Icons.wifi_off_rounded,
+                    color: AppColors.gold,
+                    size: 48,
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Failed to load Surahs',
+                    style: TextStyle(
+                      fontFamily: 'Nunito',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    snapshot.error.toString(),
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontFamily: 'Nunito',
+                      fontSize: 13,
+                      color: isDark
+                          ? AppColors.darkSubText
+                          : AppColors.lightSubText,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  ElevatedButton(
+                    onPressed: () => setState(() {
+                      _surahListFuture = _apiService.getAllSurahs();
+                    }),
+                    child: const Text('Try Again'),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        final surahs = snapshot.data ?? [];
+
+        return ListView.builder(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          itemCount: surahs.length,
+          itemBuilder: (context, index) {
+            return _buildSurahCard(context, isDark, surahs[index]);
+          },
+        );
+      },
+    );
+  }
+
+  // ── Surah Card ───────────────────────────────────────────────
+  Widget _buildSurahCard(BuildContext context, bool isDark, Surah surah) {
+    final gradientIndex =
+        (surah.number ?? 1) % AppColors.lightCardGradients.length;
+
+    return GestureDetector(
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => SurahDetailPage(surahNumber: surah.number ?? 1),
+        ),
+      ),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.darkSurface : AppColors.lightSurface,
+          borderRadius: BorderRadius.circular(AppTheme.cardRadius),
+          boxShadow: isDark
+              ? AppShadows.cardShadowDark
+              : AppShadows.cardShadowLight,
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Row(
+            children: [
+              // ── Surah number circle ──────────────
+              Container(
+                width: 46,
+                height: 46,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: isDark
+                        ? AppColors.darkCardGradients[gradientIndex]
+                        : AppColors.lightCardGradients[gradientIndex],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  shape: BoxShape.circle,
+                ),
+                child: Center(
+                  child: Text(
+                    '${surah.number}',
+                    style: TextStyle(
+                      fontFamily: 'Nunito',
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: isDark
+                          ? AppColors.darkCardIconColors[gradientIndex]
+                          : AppColors.lightCardIconColors[gradientIndex],
+                    ),
+                  ),
+                ),
+              ),
+
+              const SizedBox(width: 14),
+
+              // ── Surah details ────────────────────
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // English name
+                    Text(
+                      surah.englishName ?? '',
+                      style: TextStyle(
+                        fontFamily: 'Nunito',
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: isDark
+                            ? AppColors.darkText
+                            : AppColors.lightText,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    // Verses + revelation type
+                    Text(
+                      '${surah.numberOfAyahs} Verses  •  ${surah.revelationType}',
+                      style: TextStyle(
+                        fontFamily: 'Nunito',
+                        fontSize: 11,
+                        color: isDark
+                            ? AppColors.darkSubText
+                            : AppColors.lightSubText,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // ── Arabic name ──────────────────────
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    surah.name ?? '',
+                    style: TextStyle(
+                      fontFamily: 'Neirizi',
+                      fontWeight: FontWeight.w600,
+                      fontSize: 22,
+                      color: AppColors.gold,
+                    ),
+                    textDirection: TextDirection.rtl,
+                  ),
+                ],
+              ),
+
+              const SizedBox(width: 8),
+
+              Icon(
+                Icons.arrow_forward_ios_rounded,
+                size: 13,
+                color: isDark ? AppColors.darkSubText : AppColors.lightSubText,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+//  SURAH DETAIL PAGE
+// ─────────────────────────────────────────────────────────────
+
+class SurahDetailPage extends StatefulWidget {
+  final int surahNumber;
+
+  const SurahDetailPage({required this.surahNumber, super.key});
+
+  @override
+  State<SurahDetailPage> createState() => _SurahDetailPageState();
+}
+
+class _SurahDetailPageState extends State<SurahDetailPage> {
+  final ApiService _apiService = ApiService();
+  late Future<SurahDetailResponse> _surahDetailFuture;
+  final ValueNotifier<String?> _activeAudioNotifier = ValueNotifier(null);
+
+  @override
+  void initState() {
+    super.initState();
+    _surahDetailFuture = _apiService.getSurahWithTranslation(
+      widget.surahNumber,
+    );
+  }
+
+  @override
+  void dispose() {
+    _activeAudioNotifier.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Scaffold(
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: isDark
+              ? AppGradients.darkBackground
+              : AppGradients.lightBackground,
+        ),
+        child: FutureBuilder<SurahDetailResponse>(
+          future: _surahDetailFuture,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(
+                child: CircularProgressIndicator(color: AppColors.gold),
+              );
+            }
+
+            if (snapshot.hasError) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      Icons.wifi_off_rounded,
+                      color: AppColors.gold,
+                      size: 48,
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Failed to load Surah',
+                      style: TextStyle(
+                        fontFamily: 'Nunito',
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    ElevatedButton(
+                      onPressed: () => setState(() {
+                        _surahDetailFuture = _apiService
+                            .getSurahWithTranslation(widget.surahNumber);
+                      }),
+                      child: const Text('Try Again'),
+                    ),
+                  ],
+                ),
+              );
+            }
+
+            final surahDetail = snapshot.data;
+            final surah = surahDetail?.surah;
+            var ayahs = surahDetail?.ayahs ?? [];
+
+            // Filter ayahs for Surah Kahf (18) to show only first and last 10
+            if (surah?.number == 18 && ayahs.length > 20) {
+              final firstTen = ayahs.sublist(0, 10);
+              final lastTen = ayahs.sublist(ayahs.length - 10);
+              ayahs = [...firstTen, ...lastTen];
+            }
+
+            if (surah == null) {
+              return const Center(
+                child: Text(
+                  'No data available',
+                  style: TextStyle(fontFamily: 'Nunito'),
+                ),
+              );
+            }
+
+            return CustomScrollView(
+              slivers: [
+                // ── Surah Header ──────────────────
+                SliverAppBar(
+                  expandedHeight: 220,
+                  pinned: true,
+                  backgroundColor: AppColors.darkBackground,
+                  leading: GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: Container(
+                      margin: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.black26,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(
+                        Icons.arrow_back_ios_new_rounded,
+                        color: Colors.white,
+                        size: 18,
+                      ),
+                    ),
+                  ),
+                  flexibleSpace: FlexibleSpaceBar(
+                    collapseMode: CollapseMode.parallax,
+                    background: Container(
+                      decoration: BoxDecoration(
+                        gradient: AppGradients.goldShimmer,
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const SizedBox(height: 48),
+                          // Arabic name
+                          Text(
+                            surah.name ?? '',
+                            style: const TextStyle(
+                              fontFamily: 'alKitab',
+                              fontSize: 48,
+                              color: Colors.white,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 8),
+                          // English translation
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              surah.englishNameTranslation ?? '',
+                              style: const TextStyle(
+                                fontFamily: 'Nunito',
+                                fontSize: 14,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          // Verses + revelation type chips
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              _buildChip('${surah.numberOfAyahs} Verses'),
+                              const SizedBox(width: 12),
+                              _buildChip(surah.revelationType ?? ''),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    child: __buildBismallahText(),
+                  ),
+                ),
+
+                // ── Ayahs List ────────────────────
+                SliverPadding(
+                  padding: const EdgeInsets.all(12),
+                  sliver: SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) {
+                        final adjustedIndex = surah.number == 1
+                            ? index + 1
+                            : index;
+                        return _buildAyahCard(
+                          context,
+                          isDark,
+                          ayahs[adjustedIndex],
+                          surah.number ?? 1,
+                          displayNumber: surah.number == 1
+                              ? '${index + 1}'
+                              : null,
+                        );
+                      },
+                      childCount: surah.number == 1
+                          ? ayahs.length - 1
+                          : ayahs.length,
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildChip(String text) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.18),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Text(
+        text,
+        style: const TextStyle(
+          fontFamily: 'Nunito',
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+          color: Colors.white,
+        ),
+      ),
+    );
+  }
+
+  // ── Ayah Card ────────────────────────────────────────────────
+  Widget _buildAyahCard(
+    BuildContext context,
+    bool isDark,
+    Ayah ayah,
+    int surahNumber, {
+    String? displayNumber,
+  }) {
+    return Container(
+      key: ValueKey('ayah_${surahNumber}_${ayah.numberInSurah}'),
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.darkSurface : AppColors.lightSurface,
+        borderRadius: BorderRadius.circular(AppTheme.cardRadius),
+        boxShadow: isDark
+            ? AppShadows.cardShadowDark
+            : AppShadows.cardShadowLight,
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // ── Ayah number row ──────────────────
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                // Number circle
+                Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    gradient: AppGradients.goldShimmer,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Center(
+                    child: Text(
+                      displayNumber ?? ayah.numberInSurah ?? '?',
+                      style: const TextStyle(
+                        fontFamily: 'Nunito',
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+
+                // Sajdah badge
+                if (ayah.sajdah ?? false)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 5,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.gold.withOpacity(0.12),
+                      border: Border.all(
+                        color: AppColors.gold.withOpacity(0.5),
+                        width: 1,
+                      ),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.star_rounded,
+                          size: 12,
+                          color: AppColors.gold,
+                        ),
+                        SizedBox(width: 4),
+                        Text(
+                          'Sajdah',
+                          style: TextStyle(
+                            fontFamily: 'Nunito',
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.gold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+
+            const SizedBox(height: 5),
+            __buildAyahArabicText(ayah),
+
+            // ── Arabic text ──────────────────────
+            const SizedBox(height: 5),
+
+            // ── Translation ──────────────────────
+            if (ayah.translation != null && ayah.translation!.isNotEmpty)
+              Container(
+                padding: const EdgeInsets.all(5),
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? AppColors.darkBackground.withOpacity(0.5)
+                      : AppColors.lightBackground,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: AppColors.gold.withOpacity(0.15),
+                    width: 1,
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Translation',
+                      style: TextStyle(
+                        fontFamily: 'Nunito',
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.gold,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      ayah.translation ?? '',
+                      style: TextStyle(
+                        fontFamily: 'Nunito',
+                        fontSize: 14,
+                        height: 1.6,
+                        fontStyle: FontStyle.italic,
+                        color: isDark
+                            ? AppColors.darkSubText
+                            : AppColors.lightSubText,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+            const SizedBox(height: 5),
+
+            // ── Juz / Page / Audio ───────────────
+            if (ayah.juz != null || ayah.page != null || ayah.audioUrl != null)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Wrap(
+                      spacing: 8,
+                      children: [
+                        if (ayah.juz != null)
+                          _buildBadge('Juz ${ayah.juz}', isDark),
+                        if (ayah.page != null)
+                          _buildBadge('Page ${ayah.page}', isDark),
+                        if (ayah.ruku != null)
+                          _buildBadge('Ruku ${ayah.ruku}', isDark),
+                      ],
+                    ),
+                  ),
+                  if (ayah.audioUrl != null && ayah.audioUrl!.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(left: 12),
+                      child: InlineAudioPlayer(
+                        key: ValueKey(
+                          'player_${surahNumber}_${ayah.numberInSurah}',
+                        ),
+                        audioUrl: ayah.audioUrl!,
+                        activeAudioNotifier: _activeAudioNotifier,
+                      ),
+                    ),
+                ],
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget __buildBismallahText() {
+    String beginUnicode = "\u06DE";
+    String endUnicode = "\u06DE";
+    String bismillah =
+        '$beginUnicode  بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيمِ  $endUnicode';
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.gold.withOpacity(0.06),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Text(
+        bismillah,
+        textDirection: TextDirection.rtl,
+        textAlign: TextAlign.center,
+        style: const TextStyle(
+          fontFamily: 'Neirizi',
+          fontWeight: FontWeight.w600,
+          fontSize: 30,
+          height: 2.2,
+          color: AppColors.goldDark,
+          //color: Color(0xFF2A6B6E),
+        ),
+      ),
+    );
+  }
+
+  Widget __buildAyahArabicText(ayah) {
+    String text = ayah.text;
+    if (ayah.numberInSurah == '1') {
+      text = text.replaceAll("بِسۡمِ ٱللَّهِ ٱلرَّحۡمَـٰنِ ٱلرَّحِیمِ", "");
+    }
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.gold.withOpacity(0.06),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Text(
+        text,
+        textDirection: TextDirection.rtl,
+        textAlign: TextAlign.right,
+        style: const TextStyle(
+          fontFamily: 'alKitab',
+          fontWeight: FontWeight.w700,
+          fontSize: 28,
+          height: 2.2,
+          color: AppColors.goldDark,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBadge(String text, bool isDark) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: AppColors.gold.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Text(
+        text,
+        style: const TextStyle(
+          fontFamily: 'Nunito',
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          color: AppColors.gold,
+        ),
+      ),
+    );
+  }
+}

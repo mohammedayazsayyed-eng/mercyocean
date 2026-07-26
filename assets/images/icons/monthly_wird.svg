@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
+  <!-- Calendar page -->
+  <rect x="20" y="18" width="60" height="66" rx="6" stroke="currentColor" stroke-width="2.5" fill="none"/>
+  
+  <!-- Calendar top bar -->
+  <rect x="20" y="18" width="60" height="16" rx="6" fill="currentColor" opacity="0.15"/>
+  <rect x="20" y="28" width="60" height="6" fill="currentColor" opacity="0.15"/>
+  
+  <!-- Month name bar -->
+  <line x1="28" y1="26" x2="46" y2="26" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+  <line x1="52" y1="26" x2="60" y2="26" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+
+  <!-- Calendar binding rings -->
+  <g fill="none" stroke="currentColor" stroke-width="2">
+    <circle cx="34" cy="16" r="4"/>
+    <circle cx="50" cy="16" r="4"/>
+    <circle cx="66" cy="16" r="4"/>
+  </g>
+
+  <!-- Crescent moon -->
+  <path d="M50 55 A16 16 0 0 0 44 82 A12 12 0 0 1 50 55 Z" 
+        stroke="currentColor" stroke-width="2.2" fill="currentColor" fill-opacity="0.15" stroke-linejoin="round"/>
+  
+  <!-- Tasbeeh beads forming "30" -->
+  <g fill="currentColor">
+    <!-- 3 -->
+    <circle cx="42" cy="75" r="2"/>
+    <circle cx="38" cy="75" r="2"/>
+    <circle cx="40" cy="70" r="2"/>
+    <circle cx="40" cy="65" r="2"/>
+    <circle cx="38" cy="60" r="2"/>
+    <circle cx="42" cy="60" r="2"/>
+    <circle cx="41" cy="72" r="2"/>
+    <!-- 0 -->
+    <circle cx="54" cy="65" r="2"/>
+    <circle cx="54" cy="60" r="2"/>
+    <circle cx="50" cy="60" r="2"/>
+    <circle cx="50" cy="65" r="2"/>
+    <circle cx="54" cy="70" r="2"/>
+    <circle cx="50" cy="70" r="2"/>
+  </g>
+
+  <!-- Checkmark -->
+  <path d="M38 82 L44 88 L62 72" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
