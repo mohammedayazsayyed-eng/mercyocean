@@ -1,21 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mercyocean/config/app_state.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-// ─────────────────────────────────────────────
+// --------------------------------------------------
 //  COLOR TOKENS
-// ─────────────────────────────────────────────
+// --------------------------------------------------
 
 class AppColors {
   AppColors._();
 
-  // ── Gold Accent (shared) ──────────────────────
+  // — Gold Accent (shared) ———————
   static const Color gold = Color(0xFFC9A247);
   static const Color goldLight = Color(0xFFD4AF5A);
   static const Color goldDark = Color(0xFFAA8830);
   static const Color goldSurface = Color(0xFFF5E6C0);
 
-  // ── Light Mode ───────────────────────────────
+  // — Light Mode ———————
   static const Color lightBackground = Color(0xFFF5EFE4);
   static const Color lightSurface = Color(0xFFFFFFFF);
   static const Color lightNavBar = Color(0xFFFFFFFF);
@@ -231,13 +232,17 @@ class AppTextStyles {
   );
 }
 
-void toggleTheme() {
+void toggleTheme() async {
+  final prefs = await SharedPreferences.getInstance();
   if (themeNotifier.value == ThemeMode.dark) {
     themeNotifier.value = ThemeMode.light;
+    await prefs.setBool('isDarkMode', false);
   } else {
     themeNotifier.value = ThemeMode.dark;
+    await prefs.setBool('isDarkMode', true);
   }
 }
+
 
 bool get isDarkMode => themeNotifier.value == ThemeMode.dark;
 
