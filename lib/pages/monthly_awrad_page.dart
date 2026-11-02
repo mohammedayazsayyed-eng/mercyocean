@@ -401,11 +401,12 @@ class _MonthlyAwradPageState extends State<MonthlyAwradPage> {
               : AppShadows.cardShadowLight,
         ),
         padding: const EdgeInsets.all(14),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            if (isCurrent)
-              Container(
+        child: SingleChildScrollView(
+  child: Column(
+    mainAxisAlignment: MainAxisAlignment.center,
+    children: [
+      if (isCurrent)
+        Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 10,
                   vertical: 4,
@@ -455,7 +456,7 @@ class _MonthlyAwradPageState extends State<MonthlyAwradPage> {
                 fontWeight: FontWeight(700),
               ),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 2),
             Text(
               month.description,
               textAlign: TextAlign.center,
@@ -463,7 +464,7 @@ class _MonthlyAwradPageState extends State<MonthlyAwradPage> {
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 color: iconColor.withOpacity(0.7),
-                fontSize: 15,
+                fontSize: 12,
                 fontFamily: 'Nunito',
               ),
             ),
@@ -481,6 +482,7 @@ class _MonthlyAwradPageState extends State<MonthlyAwradPage> {
               ),
             ],
           ],
+        ),
         ),
       ),
     );
