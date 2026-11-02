@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
+  <!-- Shield -->
+  <path d="M50 8 L82 22 L82 54 Q82 76 50 92 Q18 76 18 54 L18 22 Z" 
+        stroke="currentColor" stroke-width="2.8" fill="none" stroke-linejoin="round"/>
+
+  <!-- Shield inner detail -->
+  <line x1="50" y1="16" x2="50" y2="86" stroke="currentColor" stroke-width="1" opacity="0.3"/>
+  <line x1="22" y1="44" x2="78" y2="44" stroke="currentColor" stroke-width="1" opacity="0.3"/>
+
+  <!-- Heart -->
+  <path d="M50 38 Q40 26 30 36 Q20 46 30 54 L50 72 L70 54 Q80 46 70 36 Q60 26 50 38 Z" 
+        stroke="currentColor" stroke-width="2.2" fill="none" stroke-linejoin="round"/>
+
+  <!-- Flame in heart -->
+  <path d="M50 28 Q46 20 50 14 Q54 20 50 28 Z" fill="currentColor" opacity="0.7"/>
+
+  <!-- Key -->
+  <g stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <line x1="50" y1="76" x2="50" y2="90"/>
+    <circle cx="50" cy="76" r="5"/>
+    <line x1="50" y1="88" x2="55" y2="88"/>
+    <line x1="50" y1="85" x2="54" y2="85"/>
+  </g>
+
+  <!-- Sparkles -->
+  <g fill="currentColor" opacity="0.5">
+    <polygon points="14,36 15,39 18,39 16,41 17,44 14,42 11,44 12,41 10,39 13,39"/>
+    <polygon points="86,36 87,39 90,39 88,41 89,44 86,42 83,44 84,41 82,39 85,39"/>
+  </g>
+</svg>
