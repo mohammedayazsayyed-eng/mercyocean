@@ -241,7 +241,7 @@ class _SurahListReaderScreenState extends State<SurahListReaderScreen> {
               return IconButton(
                 icon: Icon(
                   Icons.text_format, // A nice font icon
-                  color: primaryColor, 
+                  color: primaryColor,
                 ),
                 tooltip: isIndoPak ? 'Switch to Uthmani' : 'Switch to IndoPak',
                 onPressed: () {
@@ -377,26 +377,55 @@ class _SurahListReaderScreenState extends State<SurahListReaderScreen> {
                           ],
                         ),
                       ),
-ValueListenableBuilder<bool>(
-          valueListenable: isIndoPakNotifier,
-          builder: (context, isIndoPak, child) {
-            return Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: isIndoPak
-                  ? Text(
-                      getVerse(surahNumber, verseNumber),
-                      textAlign: TextAlign.right,
-                      textDirection: TextDirection.rtl, // Ensures proper right-to-left Arabic formatting
-                      style: TextStyle(
-                        fontFamily: 'IndoPak',
-                        fontSize: 26, // You can adjust this size later if it's too big/small
-                        color: Theme.of(context).textTheme.bodyLarge?.color,
+                      ValueListenableBuilder<bool>(
+                        valueListenable: isIndoPakNotifier,
+                        builder: (context, isIndoPak, child) {
+                          // Normalize hidden no-break spaces / newlines so text wraps naturally
+                          final String indoPakVerse =
+                              getVerse(surahNumber, verseNumber)
+                                  .replaceAll(
+                                    RegExp(
+                                      r'[\u00A0\u202F\u2007\u2060\uFEFF\r\n]+',
+                                    ),
+                                    ' ',
+                                  )
+                                  .trim();
+
+                          return Padding(
+                            padding: const EdgeInsets.all(16.0),
+                            child: isIndoPak
+                                ? SizedBox(
+                                    width: double.infinity,
+                                    child: RichText(
+                                      textAlign: TextAlign.start, // was justify
+                                      textDirection: TextDirection.rtl,
+                                      softWrap: true,
+                                      text: TextSpan(
+                                        style: TextStyle(
+                                          fontFamily: 'IndoPak',
+                                          fontSize: 24,
+                                          height: 2.0,
+                                          color: Theme.of(
+                                            context,
+                                          ).textTheme.bodyLarge?.color,
+                                        ),
+                                        children: [
+                                          TextSpan(text: indoPakVerse),
+                                          TextSpan(
+                                            text: ' ﴿$verseNumber﴾',
+                                            style: const TextStyle(
+                                              fontSize: 20,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  )
+                                : othmanicText,
+                          );
+                        },
                       ),
-                    )
-                  : othmanicText,
-            );
-          },
-        ),
                     ],
                   ),
                 );
