@@ -6,6 +6,7 @@ import 'package:just_audio/just_audio.dart';
 import 'package:qcf_quran_plus/qcf_quran_plus.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import 'package:share_plus/share_plus.dart';
+import '../main.dart';
 
 class SurahListReaderScreen extends StatefulWidget {
   final int initialSurah;
@@ -233,6 +234,24 @@ class _SurahListReaderScreenState extends State<SurahListReaderScreen> {
           ),
         ),
         centerTitle: true,
+        actions: [
+          ValueListenableBuilder<bool>(
+            valueListenable: isIndoPakNotifier,
+            builder: (context, isIndoPak, child) {
+              return IconButton(
+                icon: Icon(
+                  Icons.text_format, // A nice font icon
+                  color: primaryColor, 
+                ),
+                tooltip: isIndoPak ? 'Switch to Uthmani' : 'Switch to IndoPak',
+                onPressed: () {
+                  // This flips the true/false value every time it's tapped!
+                  toggleFontScript(!isIndoPak);
+                },
+              );
+            },
+          ),
+        ],
       ),
       body: SafeArea(
         child: QuranSurahListView(
@@ -358,10 +377,26 @@ class _SurahListReaderScreenState extends State<SurahListReaderScreen> {
                           ],
                         ),
                       ),
-                      Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: othmanicText,
+ValueListenableBuilder<bool>(
+          valueListenable: isIndoPakNotifier,
+          builder: (context, isIndoPak, child) {
+            return Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: isIndoPak
+                  ? Text(
+                      getVerse(surahNumber, verseNumber),
+                      textAlign: TextAlign.right,
+                      textDirection: TextDirection.rtl, // Ensures proper right-to-left Arabic formatting
+                      style: TextStyle(
+                        fontFamily: 'IndoPak',
+                        fontSize: 26, // You can adjust this size later if it's too big/small
+                        color: Theme.of(context).textTheme.bodyLarge?.color,
                       ),
+                    )
+                  : othmanicText,
+            );
+          },
+        ),
                     ],
                   ),
                 );

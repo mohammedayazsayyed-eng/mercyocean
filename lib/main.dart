@@ -14,12 +14,24 @@ import 'splash_screen.dart';
 import 'package:mercyocean/service/api_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+// Global notifier for the font script (false = Uthmani, true = IndoPak)
+final ValueNotifier<bool> isIndoPakNotifier = ValueNotifier(false);
+
+// Function to toggle and save the font preference
+Future<void> toggleFontScript(bool isIndoPak) async {
+  isIndoPakNotifier.value = isIndoPak;
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setBool('isIndoPakScript', isIndoPak);
+}
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
   final prefs = await SharedPreferences.getInstance();
   final isDark = prefs.getBool('isDarkMode') ?? false;
   themeNotifier.value = isDark ? ThemeMode.dark : ThemeMode.light;
+  // Load saved font script preference
+  final isIndoPak = prefs.getBool('isIndoPakScript') ?? false;
+  isIndoPakNotifier.value = isIndoPak;
   
   runApp(const MyApp());
 }
