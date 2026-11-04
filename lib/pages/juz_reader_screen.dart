@@ -46,6 +46,7 @@ class _JuzReaderScreenState extends State<JuzReaderScreen> {
     _juz = widget.juz;
     _segments = juzSegments(_juz);
     _chipKeys = List.generate(_segments.length, (_) => GlobalKey());
+    WidgetsBinding.instance.addPostFrameCallback((_) => _jumpToSegmentStart());
 
     _playerStateSubscription = _audioPlayer.playerStateStream.listen((state) {
       if (state.processingState == ProcessingState.completed) {
@@ -71,7 +72,25 @@ class _JuzReaderScreenState extends State<JuzReaderScreen> {
       _itemScrollController = ItemScrollController();
       _highlights = [];
     });
-    WidgetsBinding.instance.addPostFrameCallback((_) => _revealChip(index));
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _revealChip(index);
+      _jumpToSegmentStart();
+    });
+  }
+
+  // When a Juz starts in the middle of a surah (e.g. The Cave 75-110), jump
+  // straight to the first verse of the Juz so the surah banner and the hidden
+  // verses above it are scrolled out of sight.
+  void _jumpToSegmentStart([int attempt = 0]) {
+    if (!mounted || _segment.startAyah == 1) return;
+    if (_itemScrollController.isAttached) {
+      _itemScrollController.jumpTo(index: _segment.startAyah);
+    } else if (attempt < 5) {
+      Future.delayed(
+        const Duration(milliseconds: 60),
+        () => _jumpToSegmentStart(attempt + 1),
+      );
+    }
   }
 
   // Called when the user taps a chip or a "Next" button.
@@ -96,6 +115,7 @@ class _JuzReaderScreenState extends State<JuzReaderScreen> {
       if (_chipScrollController.hasClients) {
         _chipScrollController.jumpTo(0);
       }
+      _jumpToSegmentStart();
     });
   }
 
@@ -243,11 +263,99 @@ class _JuzReaderScreenState extends State<JuzReaderScreen> {
   // UI
   // ---------------------------------------------------------------------------
 
+  void _showSurahSheet(Color primaryColor) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetContext) {
+        return DraggableScrollableSheet(
+          expand: false,
+          initialChildSize: 0.6,
+          maxChildSize: 0.9,
+          minChildSize: 0.35,
+          builder: (context, scrollController) {
+            return Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                  child: Text(
+                    'Surahs in Juz $_juz',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontFamily: 'Poppins',
+                      fontSize: 16,
+                      color: primaryColor,
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: ListView.builder(
+                    controller: scrollController,
+                    itemCount: _segments.length,
+                    itemBuilder: (context, i) {
+                      final s = _segments[i];
+                      final selected = i == _segmentIndex;
+                      return ListTile(
+                        selected: selected,
+                        selectedColor: primaryColor,
+                        selectedTileColor: primaryColor.withValues(alpha: 0.08),
+                        leading: CircleAvatar(
+                          radius: 16,
+                          backgroundColor: primaryColor.withValues(alpha: 0.12),
+                          child: Text(
+                            '${s.surah}',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: primaryColor,
+                              fontFamily: 'Poppins',
+                            ),
+                          ),
+                        ),
+                        title: Text(
+                          getSurahNameEnglish(s.surah),
+                          style: const TextStyle(fontFamily: 'Poppins'),
+                        ),
+                        subtitle: Text(
+                          s.isFullSurah
+                              ? 'Full surah (${s.endAyah} ayahs)'
+                              : 'Ayah ${s.startAyah} to ${s.endAyah}',
+                          style: const TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 12,
+                          ),
+                        ),
+                        trailing: Text(
+                          getSurahNameArabic(s.surah),
+                          style: TextStyle(
+                            fontFamily: 'Neirizi',
+                            fontSize: 18,
+                            color: primaryColor,
+                          ),
+                        ),
+                        onTap: () {
+                          Navigator.pop(sheetContext);
+                          if (i != _segmentIndex) _selectSegment(i);
+                        },
+                      );
+                    },
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
   Widget _buildSegmentBar(Color primaryColor) {
     return SingleChildScrollView(
       controller: _chipScrollController,
       scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
       child: Row(
         children: [
           for (int i = 0; i < _segments.length; i++)
@@ -322,6 +430,11 @@ class _JuzReaderScreenState extends State<JuzReaderScreen> {
         ),
         centerTitle: true,
         actions: [
+          IconButton(
+            icon: Icon(Icons.format_list_bulleted, color: primaryColor),
+            tooltip: 'Surahs in this Juz',
+            onPressed: () => _showSurahSheet(primaryColor),
+          ),
           ValueListenableBuilder<bool>(
             valueListenable: isIndoPakNotifier,
             builder: (context, isIndoPak, child) {
@@ -483,15 +596,15 @@ class _JuzReaderScreenState extends State<JuzReaderScreen> {
                               valueListenable: isIndoPakNotifier,
                               builder: (context, isIndoPak, child) {
                                 // Normalize hidden no-break spaces / newlines
-                                final String
-                                indoPakVerse = getVerse(surahNumber, verseNumber)
-                                    .replaceAll(
-                                      RegExp(
-                                        r'[\u00A0\u202F\u2007\u2060\uFEFF\r\n]+',
-                                      ),
-                                      ' ',
-                                    )
-                                    .trim();
+                                final String indoPakVerse =
+                                    getVerse(surahNumber, verseNumber)
+                                        .replaceAll(
+                                          RegExp(
+                                            r'[\u00A0\u202F\u2007\u2060\uFEFF\r\n]+',
+                                          ),
+                                          ' ',
+                                        )
+                                        .trim();
 
                                 return Padding(
                                   padding: const EdgeInsets.all(16.0),
