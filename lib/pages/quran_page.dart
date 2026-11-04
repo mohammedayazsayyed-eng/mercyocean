@@ -3,6 +3,7 @@ import 'package:mercyocean/config/app_state.dart';
 import 'package:mercyocean/pages/mushaf_bookmarks_page.dart';
 import 'package:mercyocean/pages/mushaf_page.dart';
 import 'package:mercyocean/pages/surah_list_reader_screen.dart';
+import 'package:mercyocean/pages/juz_list_screen.dart';
 import 'package:mercyocean/service/mushaf_bookmark_service.dart';
 import 'package:qcf_quran_plus/qcf_quran_plus.dart';
 // import '../config/app_theme.dart';
@@ -129,6 +130,17 @@ class _QuranPageState extends State<QuranPage> {
                   ),
                 ),
               ],
+            ),
+            const SizedBox(height: 12),
+            _buildNavButton(
+              context,
+              title: 'Juz wise',
+              icon: Icons.layers_outlined,
+              color: const Color(0xFFD4AF37),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const JuzListScreen()),
+              ),
             ),
             const SizedBox(height: 25),
 

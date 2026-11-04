@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import '../service/api_service.dart';
 import '../config/app_theme.dart';
 
@@ -22,7 +22,9 @@ class _GoldenChainPageState extends State<GoldenChainPage> {
 
   Future<void> _getData() async {
     try {
-      final result = await ApiService().getPages('naqshbandi-golden-chain_mobile');
+      final result = await ApiService().getPages(
+        'naqshbandi-golden-chain_mobile',
+      );
       final posts = result ?? [];
       final names = <String>[];
       for (final post in posts) {
@@ -152,7 +154,9 @@ class _GoldenChainPageState extends State<GoldenChainPage> {
 
   Widget _buildBody(bool isDark) {
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator(color: AppColors.gold));
+      return const Center(
+        child: CircularProgressIndicator(color: AppColors.gold),
+      );
     }
     if (_error != null) return _buildError();
     if (_chainNames.isEmpty) return _buildEmpty(isDark);
@@ -201,7 +205,9 @@ class _GoldenChainPageState extends State<GoldenChainPage> {
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: AppColors.gold.withValues(alpha: isDark ? 0.55 : 0.35),
+                        color: AppColors.gold.withValues(
+                          alpha: isDark ? 0.55 : 0.35,
+                        ),
                         blurRadius: 8,
                         offset: const Offset(0, 2),
                       ),
@@ -239,7 +245,10 @@ class _GoldenChainPageState extends State<GoldenChainPage> {
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: 6),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 12,
+                ),
                 decoration: BoxDecoration(
                   gradient: isDark
                       ? const LinearGradient(
@@ -257,7 +266,9 @@ class _GoldenChainPageState extends State<GoldenChainPage> {
                         ),
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
-                    color: AppColors.gold.withValues(alpha: isDark ? 0.18 : 0.2),
+                    color: AppColors.gold.withValues(
+                      alpha: isDark ? 0.18 : 0.2,
+                    ),
                     width: 1,
                   ),
                   boxShadow: isDark

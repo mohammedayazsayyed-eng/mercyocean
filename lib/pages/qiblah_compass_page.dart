@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -73,8 +73,10 @@ class _QiblahCompassPageState extends State<QiblahCompassPage> {
       if (lastKnown != null && mounted) {
         setState(() {
           _position = lastKnown;
-          _qiblaDirection =
-              _calculateQibla(lastKnown.latitude, lastKnown.longitude);
+          _qiblaDirection = _calculateQibla(
+            lastKnown.latitude,
+            lastKnown.longitude,
+          );
           _isLoadingLocation = false;
         });
       }
@@ -83,14 +85,17 @@ class _QiblahCompassPageState extends State<QiblahCompassPage> {
     // Accurate fix in background
     try {
       final position = await Geolocator.getCurrentPosition(
-        locationSettings:
-            const LocationSettings(accuracy: LocationAccuracy.high),
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+        ),
       );
       if (mounted) {
         setState(() {
           _position = position;
-          _qiblaDirection =
-              _calculateQibla(position.latitude, position.longitude);
+          _qiblaDirection = _calculateQibla(
+            position.latitude,
+            position.longitude,
+          );
           _isLoadingLocation = false;
         });
       }
@@ -111,7 +116,8 @@ class _QiblahCompassPageState extends State<QiblahCompassPage> {
     const lng2 = _meccaLng * math.pi / 180;
     final dLng = lng2 - lng1;
     final y = math.sin(dLng) * math.cos(lat2);
-    final x = math.cos(lat1) * math.sin(lat2) -
+    final x =
+        math.cos(lat1) * math.sin(lat2) -
         math.sin(lat1) * math.cos(lat2) * math.cos(dLng);
     return ((math.atan2(y, x) * 180 / math.pi) + 360) % 360;
   }
@@ -195,7 +201,8 @@ class _QiblahCompassPageState extends State<QiblahCompassPage> {
   Widget _buildBody(bool isDark) {
     if (_isLoadingLocation) {
       return const Center(
-          child: CircularProgressIndicator(color: AppColors.gold));
+        child: CircularProgressIndicator(color: AppColors.gold),
+      );
     }
     if (_locationError != null) return _buildError(isDark);
     if (!_hasCompass) return _buildNoCompass(isDark);
@@ -213,8 +220,11 @@ class _QiblahCompassPageState extends State<QiblahCompassPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.location_off_rounded,
-                color: AppColors.gold, size: 48),
+            const Icon(
+              Icons.location_off_rounded,
+              color: AppColors.gold,
+              size: 48,
+            ),
             const SizedBox(height: 16),
             Text(
               _locationError!,
@@ -228,7 +238,9 @@ class _QiblahCompassPageState extends State<QiblahCompassPage> {
             ),
             const SizedBox(height: 24),
             ElevatedButton(
-                onPressed: _getLocation, child: const Text('Try Again')),
+              onPressed: _getLocation,
+              child: const Text('Try Again'),
+            ),
           ],
         ),
       ),
@@ -301,8 +313,7 @@ class _CompassDisplayState extends State<_CompassDisplay> {
 
   double get _diff => (widget.qiblaDirection - _heading + 360) % 360;
   bool get _isAligned => _diff < 5 || _diff > 355;
-  double get _needleAngle =>
-      (widget.qiblaDirection - _heading) * math.pi / 180;
+  double get _needleAngle => (widget.qiblaDirection - _heading) * math.pi / 180;
 
   @override
   Widget build(BuildContext context) {
@@ -340,8 +351,7 @@ class _CompassDisplayState extends State<_CompassDisplay> {
       margin: const EdgeInsets.symmetric(horizontal: 24),
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
       decoration: BoxDecoration(
-        color:
-            widget.isDark ? AppColors.darkSurface : AppColors.lightSurface,
+        color: widget.isDark ? AppColors.darkSurface : AppColors.lightSurface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: AppColors.gold.withValues(alpha: _isAligned ? 0.8 : 0.2),
@@ -358,8 +368,11 @@ class _CompassDisplayState extends State<_CompassDisplay> {
           _divider(),
           _stat('Heading', '${_heading.abs().toStringAsFixed(1)}°'),
           _divider(),
-          _stat('Offset', '${_diff.toStringAsFixed(1)}°',
-              highlight: _isAligned),
+          _stat(
+            'Offset',
+            '${_diff.toStringAsFixed(1)}°',
+            highlight: _isAligned,
+          ),
         ],
       ),
     );
@@ -431,8 +444,7 @@ class _CompassDisplayState extends State<_CompassDisplay> {
       child: _isAligned
           ? Container(
               key: const ValueKey('aligned'),
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
               decoration: BoxDecoration(
                 color: AppColors.gold.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(30),
@@ -463,10 +475,10 @@ class _CompassDisplayState extends State<_CompassDisplay> {
   }
 
   Widget _divider() => Container(
-        width: 1,
-        height: 36,
-        color: AppColors.gold.withValues(alpha: 0.25),
-      );
+    width: 1,
+    height: 36,
+    color: AppColors.gold.withValues(alpha: 0.25),
+  );
 
   Widget _stat(String label, String value, {bool highlight = false}) {
     return Column(
@@ -491,9 +503,7 @@ class _CompassDisplayState extends State<_CompassDisplay> {
             fontWeight: FontWeight.w700,
             color: highlight
                 ? AppColors.gold
-                : (widget.isDark
-                    ? AppColors.darkText
-                    : AppColors.lightText),
+                : (widget.isDark ? AppColors.darkText : AppColors.lightText),
           ),
         ),
       ],
@@ -514,8 +524,7 @@ class _CompassFacePainter extends CustomPainter {
     canvas.drawCircle(
       c,
       r - 4,
-      Paint()
-        ..color = isDark ? AppColors.darkSurface : AppColors.lightSurface,
+      Paint()..color = isDark ? AppColors.darkSurface : AppColors.lightSurface,
     );
 
     canvas.drawCircle(
@@ -523,7 +532,11 @@ class _CompassFacePainter extends CustomPainter {
       r - 3,
       Paint()
         ..shader = const LinearGradient(
-          colors: [AppColors.goldLight, AppColors.goldDark, AppColors.goldLight],
+          colors: [
+            AppColors.goldLight,
+            AppColors.goldDark,
+            AppColors.goldLight,
+          ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ).createShader(Rect.fromCircle(center: c, radius: r))
@@ -545,19 +558,24 @@ class _CompassFacePainter extends CustomPainter {
       final isHalf = deg % 45 == 0;
       final isMajor = deg % 10 == 0;
       final len = isCardinal ? 20.0 : (isHalf ? 13.0 : (isMajor ? 9.0 : 5.0));
-      final strokeW =
-          isCardinal ? 2.5 : (isHalf ? 1.8 : (isMajor ? 1.2 : 0.8));
+      final strokeW = isCardinal ? 2.5 : (isHalf ? 1.8 : (isMajor ? 1.2 : 0.8));
       final tickColor = isCardinal
           ? AppColors.gold
           : (isDark
-              ? Colors.white.withValues(alpha: 0.3)
-              : Colors.black.withValues(alpha: 0.25));
+                ? Colors.white.withValues(alpha: 0.3)
+                : Colors.black.withValues(alpha: 0.25));
       final angle = deg * math.pi / 180;
       final outerR = r - 14;
       final innerR = r - 14 - len;
       canvas.drawLine(
-        Offset(c.dx + outerR * math.sin(angle), c.dy - outerR * math.cos(angle)),
-        Offset(c.dx + innerR * math.sin(angle), c.dy - innerR * math.cos(angle)),
+        Offset(
+          c.dx + outerR * math.sin(angle),
+          c.dy - outerR * math.cos(angle),
+        ),
+        Offset(
+          c.dx + innerR * math.sin(angle),
+          c.dy - innerR * math.cos(angle),
+        ),
         Paint()
           ..color = tickColor
           ..strokeWidth = strokeW

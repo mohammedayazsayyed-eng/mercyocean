@@ -50,9 +50,9 @@ class _InlineAudioPlayerState extends State<InlineAudioPlayer>
     _playerStateSubscription = _audioPlayer.playerStateStream.listen((state) {
       if (mounted) _onPlayerStateChanged(state);
     });
-    _durationSubscription = _audioPlayer.durationStream.listen(
-      (_) { if (mounted) setState(() {}); },
-    );
+    _durationSubscription = _audioPlayer.durationStream.listen((_) {
+      if (mounted) setState(() {});
+    });
 
     widget.activeAudioNotifier?.addListener(_onActiveAudioChanged);
     _initializeAudio();

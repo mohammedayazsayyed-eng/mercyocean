@@ -1,4 +1,4 @@
-﻿import 'dart:io';
+import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
@@ -52,12 +52,18 @@ class _ViewBooksState extends State<ViewBooks> {
 
       if (await file.exists()) {
         if (!mounted) return;
-        setState(() { _cachedFile = file; _isLoading = false; });
+        setState(() {
+          _cachedFile = file;
+          _isLoading = false;
+        });
         return;
       }
 
       if (!mounted) return;
-      setState(() { _isLoading = false; _isDownloading = true; });
+      setState(() {
+        _isLoading = false;
+        _isDownloading = true;
+      });
 
       await Dio().download(
         widget.pdfUrl,
@@ -156,7 +162,8 @@ class _ViewBooksState extends State<ViewBooks> {
   Widget _buildBody(bool isDark) {
     if (_isLoading) {
       return const Center(
-          child: CircularProgressIndicator(color: AppColors.gold));
+        child: CircularProgressIndicator(color: AppColors.gold),
+      );
     }
 
     if (_isDownloading) {
@@ -173,8 +180,7 @@ class _ViewBooksState extends State<ViewBooks> {
               ),
               const SizedBox(height: 20),
               ShaderMask(
-                shaderCallback: (b) =>
-                    AppGradients.goldShimmer.createShader(b),
+                shaderCallback: (b) => AppGradients.goldShimmer.createShader(b),
                 child: const Text(
                   'Downloading for offline use…',
                   style: TextStyle(
@@ -434,8 +440,11 @@ class _ViewBooksState extends State<ViewBooks> {
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.bookmarks_rounded,
-                      color: AppColors.gold, size: 18),
+                  const Icon(
+                    Icons.bookmarks_rounded,
+                    color: AppColors.gold,
+                    size: 18,
+                  ),
                   const SizedBox(width: 8),
                   Text(
                     'My Bookmarks',
@@ -448,8 +457,11 @@ class _ViewBooksState extends State<ViewBooks> {
                   const Spacer(),
                   GestureDetector(
                     onTap: () => setState(() => _showBookmarks = false),
-                    child: Icon(Icons.close_rounded,
-                        color: textColor, size: 18),
+                    child: Icon(
+                      Icons.close_rounded,
+                      color: textColor,
+                      size: 18,
+                    ),
                   ),
                 ],
               ),
@@ -460,8 +472,11 @@ class _ViewBooksState extends State<ViewBooks> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.bookmark_border_rounded,
-                              color: subColor, size: 40),
+                          Icon(
+                            Icons.bookmark_border_rounded,
+                            color: subColor,
+                            size: 40,
+                          ),
                           const SizedBox(height: 12),
                           Text(
                             'No bookmarks yet.\nTap + to add one.',
@@ -483,8 +498,11 @@ class _ViewBooksState extends State<ViewBooks> {
                       itemBuilder: (context, i) {
                         final bm = _bookmarks[i];
                         return ListTile(
-                          leading: const Icon(Icons.bookmark_rounded,
-                              color: AppColors.gold, size: 20),
+                          leading: const Icon(
+                            Icons.bookmark_rounded,
+                            color: AppColors.gold,
+                            size: 20,
+                          ),
                           title: Text(
                             'Page ${bm.page}',
                             style: TextStyle(
@@ -503,8 +521,11 @@ class _ViewBooksState extends State<ViewBooks> {
                             ),
                           ),
                           trailing: IconButton(
-                            icon: Icon(Icons.delete_outline_rounded,
-                                size: 18, color: subColor),
+                            icon: Icon(
+                              Icons.delete_outline_rounded,
+                              size: 18,
+                              color: subColor,
+                            ),
                             onPressed: () =>
                                 setState(() => _bookmarks.removeAt(i)),
                           ),

@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:hijri/hijri_calendar.dart';
 import '../config/app_theme.dart';
 import 'month_detail_page.dart';
@@ -402,87 +402,87 @@ class _MonthlyAwradPageState extends State<MonthlyAwradPage> {
         ),
         padding: const EdgeInsets.all(14),
         child: SingleChildScrollView(
-  child: Column(
-    mainAxisAlignment: MainAxisAlignment.center,
-    children: [
-      if (isCurrent)
-        Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  gradient: AppGradients.goldShimmer,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Text(
-                  'Current',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 10,
-                    fontFamily: 'Nunito',
-                    fontWeight: FontWeight.w700,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              if (isCurrent)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    gradient: AppGradients.goldShimmer,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Text(
+                    'Current',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 10,
+                      fontFamily: 'Nunito',
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ),
-              ),
-            if (isCurrent) const SizedBox(height: 8),
-            Text(
-              month.monthNumber.toString(),
-              style: TextStyle(
-                color: iconColor,
-                fontSize: 26,
-                fontFamily: 'Poppins',
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              month.name,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: iconColor,
-                fontSize: 20,
-                fontFamily: 'Nunito',
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              month.arabicName,
-              style: TextStyle(
-                color: iconColor.withOpacity(0.85),
-                fontSize: 25,
-                fontFamily: 'alKitab',
-                fontWeight: FontWeight(700),
-              ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              month.description,
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: iconColor.withOpacity(0.7),
-                fontSize: 12,
-                fontFamily: 'Nunito',
-              ),
-            ),
-            // Coming soon indicator for months without content
-            if (month.slug == null) ...[
-              const SizedBox(height: 6),
+              if (isCurrent) const SizedBox(height: 8),
               Text(
-                'Coming Soon',
+                month.monthNumber.toString(),
                 style: TextStyle(
-                  color: iconColor.withOpacity(0.5),
-                  fontSize: 10,
-                  fontFamily: 'Nunito',
-                  fontStyle: FontStyle.italic,
+                  color: iconColor,
+                  fontSize: 26,
+                  fontFamily: 'Poppins',
+                  fontWeight: FontWeight.w700,
                 ),
               ),
+              const SizedBox(height: 6),
+              Text(
+                month.name,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: iconColor,
+                  fontSize: 20,
+                  fontFamily: 'Nunito',
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                month.arabicName,
+                style: TextStyle(
+                  color: iconColor.withOpacity(0.85),
+                  fontSize: 25,
+                  fontFamily: 'alKitab',
+                  fontWeight: FontWeight(700),
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                month.description,
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: iconColor.withOpacity(0.7),
+                  fontSize: 12,
+                  fontFamily: 'Nunito',
+                ),
+              ),
+              // Coming soon indicator for months without content
+              if (month.slug == null) ...[
+                const SizedBox(height: 6),
+                Text(
+                  'Coming Soon',
+                  style: TextStyle(
+                    color: iconColor.withOpacity(0.5),
+                    fontSize: 10,
+                    fontFamily: 'Nunito',
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ],
             ],
-          ],
-        ),
+          ),
         ),
       ),
     );
