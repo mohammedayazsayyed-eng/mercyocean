@@ -275,8 +275,8 @@ class _MushafScreenState extends State<MushafScreen> {
         '${getSurahName(page.firstSurah)} ${getSurahNameArabic(page.firstSurah)}';
   }
 
-  static final RegExp _hiddenSpaces = RegExp(
-    r'[   ⁠﻿\r\n]+',
+static final RegExp _hiddenSpaces = RegExp(
+    r'[\s\u00A0\u202F\u2007\u2060\uFEFF\r\n]+',
   );
 
   // ---------------------------------------------------------------------------
@@ -311,11 +311,10 @@ class _MushafScreenState extends State<MushafScreen> {
   // Same banner as the Uthmani pages: the package's own surah_banner.png with
   // the surah name drawn by the package's header font.
   // Height = image height (width * 0.9 * ratio) + 8px padding top and bottom.
-  static double _bannerHeight(double width) => width * 0.9 * 0.11 + 16;
+  static double _bannerHeight(double width) => width * 0.11 + 16;
 
   Widget _buildIndoPakBanner(int surah, double width) {
-    final double headerWidth = width * 0.9;
-    final double fontSize = headerWidth * 0.085;
+    final double fontSize = width * 0.085;
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 8),
       width: width,
@@ -328,7 +327,7 @@ class _MushafScreenState extends State<MushafScreen> {
               'assets/surah_banner.png',
               package: 'qcf_quran_plus',
             ),
-            width: headerWidth,
+            width: width,
             fit: BoxFit.contain,
           ),
           RichText(
@@ -861,13 +860,17 @@ class _MushafScreenState extends State<MushafScreen> {
                     final surahNumber = index + 1;
                     return DropdownMenuItem<int>(
                       value: surahNumber,
-                      child: Text(
-                        '$surahNumber. ${getSurahNameEnglish(surahNumber)} ${getSurahNameArabic(surahNumber)}',
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.primary,
-                          fontWeight: FontWeight.w500,
-                          fontFamily: 'Neirizi',
-                          fontSize: 16,
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          '$surahNumber. ${getSurahNameEnglish(surahNumber)} ${getSurahNameArabic(surahNumber)}',
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.primary,
+                            fontWeight: FontWeight.w500,
+                            fontFamily: 'Neirizi',
+                            fontSize: 16,
+                          ),
                         ),
                       ),
                     );
@@ -877,7 +880,10 @@ class _MushafScreenState extends State<MushafScreen> {
                       _goToSurah(value);
                     }
                   },
-                  hint: Text(hizbText),
+                  hint: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(hizbText),
+                  ),
                 ),
               ),
             );
