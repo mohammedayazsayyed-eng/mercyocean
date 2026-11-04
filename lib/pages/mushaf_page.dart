@@ -300,6 +300,7 @@ class _MushafScreenState extends State<MushafScreen> {
   PageController? _indoController;
   int _indoSurah = 1;
   int _indoVerse = 1;
+  double _indoBodyW = 390;
   double _indoFont = 24;
   double _indoLineH = 24 * _lineRatio;
 
@@ -311,14 +312,16 @@ class _MushafScreenState extends State<MushafScreen> {
   // Same banner as the Uthmani pages: the package's own surah_banner.png with
   // the surah name drawn by the package's header font.
   // Height = image height (width * 0.9 * ratio) + 8px padding top and bottom.
-  static double _bannerHeight(double width) => width * 0.9 * 0.11 + 16;
+  static const double _bannerWidthFactor = 0.857; // of the screen width
+  static double _bannerHeight(double bodyWidth) =>
+      bodyWidth * _bannerWidthFactor * 0.109 + 16;
 
-  Widget _buildIndoPakBanner(int surah, double width) {
-    final double headerWidth = width * 0.9;
+  Widget _buildIndoPakBanner(int surah, double containerWidth, double bodyWidth) {
+    final double headerWidth = bodyWidth * _bannerWidthFactor;
     final double fontSize = headerWidth * 0.085;
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 8),
-      width: width,
+      width: containerWidth,
       alignment: Alignment.center,
       child: Stack(
         alignment: Alignment.center,
@@ -395,11 +398,11 @@ class _MushafScreenState extends State<MushafScreen> {
     return found;
   }
 
-  Future<void> _buildIndoPages(double w, double h) async {
-    final key = '${w.round()}x${h.round()}';
+  Future<void> _buildIndoPages(double w, double h, double bodyW) async {
+    final key = '${w.round()}x${h.round()}x${bodyW.round()}';
     if (_indoBuilding || (_indoKey == key && _indoPages != null)) return;
     _indoBuilding = true;
-    final pages = await _paginateIndoPak(w, h);
+    final pages = await _paginateIndoPak(w, h, bodyW);
     if (!mounted) return;
     setState(() {
       _indoPages = pages;
@@ -411,15 +414,20 @@ class _MushafScreenState extends State<MushafScreen> {
   }
 
   // Lays the whole Quran out into pages of exactly w x h.
-  Future<List<_IndoPage>> _paginateIndoPak(double w, double h) async {
+  Future<List<_IndoPage>> _paginateIndoPak(
+    double w,
+    double h,
+    double bodyW,
+  ) async {
     final double fs = (h / (_targetLines * _lineRatio))
         .clamp(20.0, 30.0)
         .toDouble();
     final double lineH = fs * _lineRatio;
-    final double bannerH = _bannerHeight(w);
+    final double bannerH = _bannerHeight(bodyW);
     final double bisH = lineH;
     final double badge = fs * 0.95;
     _indoFont = fs;
+    _indoBodyW = bodyW;
     _indoLineH = lineH;
 
     final pages = <_IndoPage>[];
@@ -556,12 +564,13 @@ class _MushafScreenState extends State<MushafScreen> {
       builder: (context, constraints) {
         final double w = constraints.maxWidth - _hPad * 2;
         final double h = constraints.maxHeight - _vPad * 2 - _footerH;
-        final String key = '${w.round()}x${h.round()}';
+        final double bodyW = constraints.maxWidth;
+        final String key = '${w.round()}x${h.round()}x${bodyW.round()}';
 
         if (_indoPages == null || _indoKey != key) {
           if (!_indoBuilding) {
             WidgetsBinding.instance.addPostFrameCallback(
-              (_) => _buildIndoPages(w, h),
+              (_) => _buildIndoPages(w, h, bodyW),
             );
           }
           return Center(
@@ -618,8 +627,10 @@ class _MushafScreenState extends State<MushafScreen> {
         children.add(
           SizedBox(
             width: w,
-            height: _bannerHeight(w),
-            child: Center(child: _buildIndoPakBanner(item.bannerSurah!, w)),
+            height: _bannerHeight(_indoBodyW),
+            child: Center(
+              child: _buildIndoPakBanner(item.bannerSurah!, w, _indoBodyW),
+            ),
           ),
         );
       } else if (item.isBismillah) {
@@ -868,6 +879,28 @@ class _MushafScreenState extends State<MushafScreen> {
                           fontWeight: FontWeight.w500,
                           fontFamily: 'Neirizi',
                           fontSize: 16,
+                        ),
+                      ),
+                    );
+                  }),
+                  // Shrink the selected title to fit instead of letting long
+                  // names wrap or hide the Arabic part.
+                  selectedItemBuilder: (context) => List.generate(114, (index) {
+                    final surahNumber = index + 1;
+                    return Align(
+                      alignment: Alignment.center,
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          '$surahNumber. ${getSurahNameEnglish(surahNumber)} ${getSurahNameArabic(surahNumber)}',
+                          maxLines: 1,
+                          softWrap: false,
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.primary,
+                            fontWeight: FontWeight.bold,
+                            fontFamily: 'Neirizi',
+                            fontSize: 16,
+                          ),
                         ),
                       ),
                     );
