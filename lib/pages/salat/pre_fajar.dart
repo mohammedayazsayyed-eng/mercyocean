@@ -8,7 +8,7 @@ class PreFajarPage extends StatefulWidget {
   const PreFajarPage({super.key});
 
   @override
-  _PreFajarPageState createState() => _PreFajarPageState();
+  State<PreFajarPage> createState() => _PreFajarPageState();
 }
 
 class _PreFajarPageState extends State<PreFajarPage> {

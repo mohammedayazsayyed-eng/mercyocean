@@ -8,7 +8,7 @@ class AsarPage extends StatefulWidget {
   const AsarPage({super.key});
 
   @override
-  _AsarPageState createState() => _AsarPageState();
+  State<AsarPage> createState() => _AsarPageState();
 }
 
 class _AsarPageState extends State<AsarPage> {

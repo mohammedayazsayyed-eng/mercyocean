@@ -8,7 +8,7 @@ class MagribPage extends StatefulWidget {
   const MagribPage({super.key});
 
   @override
-  _MagribPageState createState() => _MagribPageState();
+  State<MagribPage> createState() => _MagribPageState();
 }
 
 class _MagribPageState extends State<MagribPage> {

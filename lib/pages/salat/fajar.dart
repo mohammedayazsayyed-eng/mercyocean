@@ -8,7 +8,7 @@ class FajarPage extends StatefulWidget {
   const FajarPage({super.key});
 
   @override
-  _FajarPageState createState() => _FajarPageState();
+  State<FajarPage> createState() => _FajarPageState();
 }
 
 class _FajarPageState extends State<FajarPage> {

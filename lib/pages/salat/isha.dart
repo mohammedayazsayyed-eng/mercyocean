@@ -8,7 +8,7 @@ class IshaPage extends StatefulWidget {
   const IshaPage({super.key});
 
   @override
-  _IshaPageState createState() => _IshaPageState();
+  State<IshaPage> createState() => _IshaPageState();
 }
 
 class _IshaPageState extends State<IshaPage> {

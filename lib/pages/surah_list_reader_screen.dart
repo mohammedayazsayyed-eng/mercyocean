@@ -185,7 +185,7 @@ class _SurahListReaderScreenState extends State<SurahListReaderScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        toolbarHeight: 56.0 * MediaQuery.textScaleFactorOf(context) + 40.0,
+        toolbarHeight: MediaQuery.textScalerOf(context).scale(56.0) + 40.0,
         title: Padding(
           padding: const EdgeInsets.only(top: 14),
           child: DropdownButtonHideUnderline(

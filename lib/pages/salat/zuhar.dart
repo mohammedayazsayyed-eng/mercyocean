@@ -8,7 +8,7 @@ class ZuharPage extends StatefulWidget {
   const ZuharPage({super.key});
 
   @override
-  _ZuharPageState createState() => _ZuharPageState();
+  State<ZuharPage> createState() => _ZuharPageState();
 }
 
 class _ZuharPageState extends State<ZuharPage> {

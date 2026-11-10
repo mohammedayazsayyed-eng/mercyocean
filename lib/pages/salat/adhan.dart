@@ -8,7 +8,7 @@ class AdhanPage extends StatefulWidget {
   const AdhanPage({super.key});
 
   @override
-  _AdhanPageState createState() => _AdhanPageState();
+  State<AdhanPage> createState() => _AdhanPageState();
 }
 
 class _AdhanPageState extends State<AdhanPage> {
