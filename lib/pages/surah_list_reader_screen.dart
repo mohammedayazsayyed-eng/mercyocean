@@ -71,7 +71,7 @@ class _SurahListReaderScreenState extends State<SurahListReaderScreen> {
     }
 
     final highlightColor = Theme.of(context).brightness == Brightness.dark
-        ? Colors.amber.withOpacity(0.5)
+        ? Colors.amber.withValues(alpha: 0.5)
         : const Color(0xFF8D6E63).withValues(alpha: 0.3);
 
     _highlightsNotifier.value = [
@@ -284,19 +284,19 @@ class _SurahListReaderScreenState extends State<SurahListReaderScreen> {
                   ),
                   decoration: BoxDecoration(
                     color: isHighlighted
-                        ? highlightColor.withOpacity(0.15)
+                        ? highlightColor.withValues(alpha: 0.15)
                         : Theme.of(context).cardColor,
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
                       color: isHighlighted
                           ? highlightColor
-                          : primaryColor.withOpacity(0.1),
+                          : primaryColor.withValues(alpha: 0.1),
                       width: isHighlighted ? 1.5 : 1,
                     ),
                     boxShadow: [
                       if (!isDark && !isHighlighted)
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.03),
+                          color: Colors.black.withValues(alpha: 0.03),
                           blurRadius: 8,
                           offset: const Offset(0, 4),
                         ),
@@ -311,7 +311,7 @@ class _SurahListReaderScreenState extends State<SurahListReaderScreen> {
                           vertical: 8,
                         ),
                         decoration: BoxDecoration(
-                          color: primaryColor.withOpacity(0.05),
+                          color: primaryColor.withValues(alpha: 0.05),
                           borderRadius: const BorderRadius.vertical(
                             top: Radius.circular(15),
                           ),
@@ -325,7 +325,7 @@ class _SurahListReaderScreenState extends State<SurahListReaderScreen> {
                                 vertical: 4,
                               ),
                               decoration: BoxDecoration(
-                                color: primaryColor.withOpacity(0.1),
+                                color: primaryColor.withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Text(

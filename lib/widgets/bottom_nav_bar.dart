@@ -26,8 +26,8 @@ class _BottomNavBarState extends State<BottomNavBar> {
 
     // Bubble color — subtle gold tint in both modes
     final bubbleColor = isDark
-        ? AppColors.gold.withOpacity(0.15)
-        : AppColors.gold.withOpacity(0.12);
+        ? AppColors.gold.withValues(alpha: 0.15)
+        : AppColors.gold.withValues(alpha: 0.12);
 
     final items = [
       {'label': 'Intro', 'icon': Icons.lightbulb_outline},

@@ -1,4 +1,4 @@
-﻿// import 'dart:io';
+// import 'dart:io';
 
 // import 'package:dio/dio.dart';
 // import 'package:flutter/material.dart';
@@ -706,7 +706,7 @@ class DalailKhairatPage extends StatelessWidget {
                   padding: const EdgeInsets.all(16),
                   itemCount: items.length,
                   separatorBuilder: (_, _) => Divider(
-                    color: AppColors.gold.withOpacity(0.2),
+                    color: AppColors.gold.withValues(alpha: 0.2),
                     height: 1,
                   ),
                   itemBuilder: (context, index) {

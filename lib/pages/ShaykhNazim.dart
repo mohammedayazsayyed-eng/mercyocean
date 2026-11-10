@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_html/flutter_html.dart';
 import '../service/api_service.dart';
 import '../config/app_theme.dart';
@@ -230,7 +230,7 @@ class _ShaykhnazimState extends State<Shaykhnazim> {
                   fontWeight: FontWeight.w700,
                 ),
                 'blockquote': Style(
-                  backgroundColor: AppColors.gold.withOpacity(0.08),
+                  backgroundColor: AppColors.gold.withValues(alpha: 0.08),
                   padding: HtmlPaddings.symmetric(horizontal: 16, vertical: 12),
                   border: const Border(
                     left: BorderSide(color: AppColors.gold, width: 3),

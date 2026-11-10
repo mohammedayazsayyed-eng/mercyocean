@@ -59,7 +59,7 @@ class _TasbihFloatingButtonState extends State<TasbihFloatingButton> {
             boxShadow: [
               ...AppShadows.goldGlow,
               BoxShadow(
-                color: Colors.black.withOpacity(isDark ? 0.5 : 0.2),
+                color: Colors.black.withValues(alpha: isDark ? 0.5 : 0.2),
                 blurRadius: 16,
                 offset: const Offset(0, 6),
               ),

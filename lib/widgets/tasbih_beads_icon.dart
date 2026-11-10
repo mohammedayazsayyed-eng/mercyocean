@@ -31,11 +31,11 @@ class _TasbihBeadsPainter extends CustomPainter {
       ..color = color
       ..style = PaintingStyle.fill;
     final ringStroke = Paint()
-      ..color = color.withOpacity(0.55)
+      ..color = color.withValues(alpha: 0.55)
       ..style = PaintingStyle.stroke
       ..strokeWidth = size.width * 0.028;
     final strandStroke = Paint()
-      ..color = color.withOpacity(0.7)
+      ..color = color.withValues(alpha: 0.7)
       ..style = PaintingStyle.stroke
       ..strokeWidth = size.width * 0.045
       ..strokeCap = StrokeCap.round;

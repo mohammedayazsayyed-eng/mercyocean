@@ -790,7 +790,7 @@ class AppShadows {
 
   static List<BoxShadow> cardShadowLight = [
     BoxShadow(
-      color: Colors.black.withOpacity(0.06),
+      color: Colors.black.withValues(alpha: 0.06),
       blurRadius: 12,
       offset: const Offset(0, 4),
       spreadRadius: -2,
@@ -799,7 +799,7 @@ class AppShadows {
 
   static List<BoxShadow> cardShadowDark = [
     BoxShadow(
-      color: Colors.black.withOpacity(0.4),
+      color: Colors.black.withValues(alpha: 0.4),
       blurRadius: 16,
       offset: const Offset(0, 6),
       spreadRadius: -4,
@@ -808,7 +808,7 @@ class AppShadows {
 
   static List<BoxShadow> goldGlow = [
     BoxShadow(
-      color: AppColors.gold.withOpacity(0.35),
+      color: AppColors.gold.withValues(alpha: 0.35),
       blurRadius: 20,
       spreadRadius: -4,
       offset: Offset.zero,
@@ -817,7 +817,7 @@ class AppShadows {
 
   static List<BoxShadow> navBarShadowLight = [
     BoxShadow(
-      color: Colors.black.withOpacity(0.08),
+      color: Colors.black.withValues(alpha: 0.08),
       blurRadius: 20,
       offset: const Offset(0, -4),
     ),
@@ -825,7 +825,7 @@ class AppShadows {
 
   static List<BoxShadow> navBarShadowDark = [
     BoxShadow(
-      color: Colors.black.withOpacity(0.5),
+      color: Colors.black.withValues(alpha: 0.5),
       blurRadius: 24,
       offset: const Offset(0, -4),
     ),

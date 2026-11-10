@@ -568,9 +568,9 @@ class _TasbihPageState extends State<TasbihPage> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
             decoration: BoxDecoration(
-              color: AppColors.gold.withOpacity(isDark ? 0.16 : 0.12),
+              color: AppColors.gold.withValues(alpha: isDark ? 0.16 : 0.12),
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: AppColors.gold.withOpacity(0.4)),
+              border: Border.all(color: AppColors.gold.withValues(alpha: 0.4)),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -632,13 +632,13 @@ class _TasbihPageState extends State<TasbihPage> {
                               ? AppColors.darkSurface
                               : AppColors.lightSurface,
                           border: Border.all(
-                            color: AppColors.gold.withOpacity(0.5),
+                            color: AppColors.gold.withValues(alpha: 0.5),
                             width: 2,
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(
-                                isDark ? 0.5 : 0.18,
+                              color: Colors.black.withValues(
+                                alpha: isDark ? 0.5 : 0.18,
                               ),
                               blurRadius: 14,
                               offset: const Offset(0, 5),
@@ -650,7 +650,7 @@ class _TasbihPageState extends State<TasbihPage> {
                           children: [
                             TasbihBeadsIcon(
                               size: _glyphSize,
-                              color: AppColors.gold.withOpacity(0.6),
+                              color: AppColors.gold.withValues(alpha: 0.6),
                             ),
                             const SizedBox(height: 2),
                             // Running total — never resets on its own.
@@ -846,7 +846,7 @@ class _TasbihPageState extends State<TasbihPage> {
       decoration: BoxDecoration(
         color: isDark ? AppColors.darkSurface : AppColors.lightSurface,
         borderRadius: BorderRadius.circular(AppTheme.cardRadius),
-        border: Border.all(color: AppColors.gold.withOpacity(0.25)),
+        border: Border.all(color: AppColors.gold.withValues(alpha: 0.25)),
         boxShadow: isDark
             ? AppShadows.cardShadowDark
             : AppShadows.cardShadowLight,
@@ -856,7 +856,7 @@ class _TasbihPageState extends State<TasbihPage> {
         children: [
           Icon(
             Icons.format_quote_rounded,
-            color: AppColors.gold.withOpacity(0.55),
+            color: AppColors.gold.withValues(alpha: 0.55),
             size: 22,
           ),
           const SizedBox(height: 8),
@@ -961,7 +961,7 @@ class _TasbihPageState extends State<TasbihPage> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
             decoration: BoxDecoration(
-              color: AppColors.gold.withOpacity(isDark ? 0.18 : 0.14),
+              color: AppColors.gold.withValues(alpha: isDark ? 0.18 : 0.14),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Text(
@@ -994,7 +994,7 @@ class _TasbihPageState extends State<TasbihPage> {
           TasbihBeadsIcon(
             size: 40,
             color: (isDark ? AppColors.darkSubText : AppColors.lightSubText)
-                .withOpacity(0.6),
+                .withValues(alpha: 0.6),
           ),
           const SizedBox(height: 12),
           Text(
@@ -1053,7 +1053,7 @@ class _TasbihPageState extends State<TasbihPage> {
                   width: 44,
                   height: 44,
                   decoration: BoxDecoration(
-                    color: AppColors.gold.withOpacity(isDark ? 0.16 : 0.12),
+                    color: AppColors.gold.withValues(alpha: isDark ? 0.16 : 0.12),
                     shape: BoxShape.circle,
                   ),
                   child: Center(

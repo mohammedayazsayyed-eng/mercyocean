@@ -179,7 +179,7 @@ class _InlineAudioPlayerState extends State<InlineAudioPlayer>
             border: Border.all(
               color: _isPlaying
                   ? Colors.transparent
-                  : AppColors.gold.withOpacity(0.4),
+                  : AppColors.gold.withValues(alpha: 0.4),
               width: 1.5,
             ),
             boxShadow: _isPlaying ? AppShadows.goldGlow : null,

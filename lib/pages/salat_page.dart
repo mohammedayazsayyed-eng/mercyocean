@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import '../config/app_theme.dart';
 import 'package:mercyocean/pages/salat/adhan.dart';
 import 'package:mercyocean/pages/salat/asar.dart';
@@ -41,7 +41,7 @@ class SalatPage extends StatelessWidget {
                   padding: const EdgeInsets.all(16),
                   itemCount: items.length,
                   separatorBuilder: (_, _) => Divider(
-                    color: AppColors.gold.withOpacity(0.2),
+                    color: AppColors.gold.withValues(alpha: 0.2),
                     height: 1,
                   ),
                   itemBuilder: (context, index) {

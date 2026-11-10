@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_html/flutter_html.dart';
 import '../service/api_service.dart';
 import '../config/app_theme.dart';
@@ -182,7 +182,7 @@ class _IntroPageState extends State<IntroPage> {
                       borderRadius: BorderRadius.all(Radius.circular(20.0)),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.grey.withOpacity(0.5),
+                          color: Colors.grey.withValues(alpha: 0.5),
                           spreadRadius: 5,
                           blurRadius: 7,
                           offset: Offset(

@@ -125,7 +125,7 @@ class _DalailSectionPageState extends State<DalailSectionPage> {
                       : AppColors.lightSurface,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: AppColors.gold.withOpacity(0.6),
+                    color: AppColors.gold.withValues(alpha: 0.6),
                     width: 1.2,
                   ),
                   boxShadow: isDark
@@ -151,7 +151,7 @@ class _DalailSectionPageState extends State<DalailSectionPage> {
                         border: !_showArabic
                             ? null
                             : Border.all(
-                                color: AppColors.gold.withOpacity(0.4),
+                                color: AppColors.gold.withValues(alpha: 0.4),
                                 width: 1,
                               ),
                       ),
@@ -185,7 +185,7 @@ class _DalailSectionPageState extends State<DalailSectionPage> {
                         border: _showArabic
                             ? null
                             : Border.all(
-                                color: AppColors.gold.withOpacity(0.4),
+                                color: AppColors.gold.withValues(alpha: 0.4),
                                 width: 1,
                               ),
                       ),

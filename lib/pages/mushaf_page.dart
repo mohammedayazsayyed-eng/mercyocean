@@ -61,8 +61,8 @@ class _MushafScreenState extends State<MushafScreen> {
   }
 
   Color get _selectionColor => Theme.of(context).brightness == Brightness.dark
-      ? Colors.lightBlueAccent.withOpacity(0.5)
-      : Colors.lightBlueAccent.withOpacity(0.4);
+      ? Colors.lightBlueAccent.withValues(alpha: 0.5)
+      : Colors.lightBlueAccent.withValues(alpha: 0.4);
 
   void _enterSelectionMode() {
     setState(() {
@@ -166,8 +166,8 @@ class _MushafScreenState extends State<MushafScreen> {
 
   void _triggerTemporaryHighlight(int surah, int ayah, int page) {
     final highlightColor = Theme.of(context).brightness == Brightness.dark
-        ? Colors.amber.withOpacity(0.5)
-        : Colors.amber.withOpacity(0.4);
+        ? Colors.amber.withValues(alpha: 0.5)
+        : Colors.amber.withValues(alpha: 0.4);
 
     final newHighlight = HighlightVerse(
       surah: surah,
@@ -358,7 +358,7 @@ class _MushafScreenState extends State<MushafScreen> {
       alignment: Alignment.center,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: accent.withOpacity(0.12),
+        color: accent.withValues(alpha: 0.12),
         border: Border.all(color: accent, width: 1.3),
       ),
       child: FittedBox(
@@ -702,7 +702,7 @@ class _MushafScreenState extends State<MushafScreen> {
                 style: TextStyle(
                   fontFamily: 'Poppins',
                   fontSize: 12,
-                  color: primaryColor.withOpacity(0.6),
+                  color: primaryColor.withValues(alpha: 0.6),
                 ),
               ),
             ),
@@ -742,7 +742,7 @@ class _MushafScreenState extends State<MushafScreen> {
             color: Theme.of(context).scaffoldBackgroundColor,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
             boxShadow: [
-              BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 10),
+              BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 10),
             ],
           ),
           padding: const EdgeInsets.fromLTRB(20, 10, 20, 30),
@@ -754,7 +754,7 @@ class _MushafScreenState extends State<MushafScreen> {
                 width: 40,
                 height: 5,
                 decoration: BoxDecoration(
-                  color: Colors.grey.withOpacity(0.5),
+                  color: Colors.grey.withValues(alpha: 0.5),
                   borderRadius: BorderRadius.circular(10),
                 ),
               ),
@@ -824,7 +824,7 @@ class _MushafScreenState extends State<MushafScreen> {
         color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
         ),
       ),
       child: Column(
@@ -918,7 +918,7 @@ class _MushafScreenState extends State<MushafScreen> {
         ),
         centerTitle: true,
         backgroundColor: _selectionMode
-            ? Theme.of(context).colorScheme.primary.withOpacity(0.12)
+            ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.12)
             : null,
         actions: _selectionMode
             ? [
@@ -1011,8 +1011,8 @@ class _MushafScreenState extends State<MushafScreen> {
                       verseNumber: verseNumber,
                       page: currentPage,
                       color: Theme.of(context).brightness == Brightness.dark
-                          ? Colors.amber.withOpacity(0.5)
-                          : Colors.amber.withOpacity(0.4),
+                          ? Colors.amber.withValues(alpha: 0.5)
+                          : Colors.amber.withValues(alpha: 0.4),
                     ),
                   ];
 

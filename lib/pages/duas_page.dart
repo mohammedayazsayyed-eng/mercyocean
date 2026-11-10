@@ -389,7 +389,7 @@ class _DuasPageState extends State<DuasPage> {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: AppColors.gold.withOpacity(0.1),
+                        color: AppColors.gold.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
@@ -409,7 +409,7 @@ class _DuasPageState extends State<DuasPage> {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: AppColors.gold.withOpacity(0.1),
+                        color: AppColors.gold.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
@@ -484,7 +484,7 @@ class _DuasPageState extends State<DuasPage> {
                               : AppColors.lightSurface,
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: AppColors.gold.withOpacity(0.3),
+                            color: AppColors.gold.withValues(alpha: 0.3),
                             width: 1,
                           ),
                         ),
@@ -531,7 +531,7 @@ class _DuasPageState extends State<DuasPage> {
                               : AppColors.lightBackground,
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: AppColors.gold.withOpacity(0.2),
+                            color: AppColors.gold.withValues(alpha: 0.2),
                             width: 1,
                           ),
                         ),
@@ -578,7 +578,7 @@ class _DuasPageState extends State<DuasPage> {
                               : AppColors.lightBackground,
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: AppColors.gold.withOpacity(0.2),
+                            color: AppColors.gold.withValues(alpha: 0.2),
                             width: 1,
                           ),
                         ),

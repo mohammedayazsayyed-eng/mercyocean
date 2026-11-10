@@ -450,7 +450,7 @@ class _MonthlyAwradPageState extends State<MonthlyAwradPage> {
               Text(
                 month.arabicName,
                 style: TextStyle(
-                  color: iconColor.withOpacity(0.85),
+                  color: iconColor.withValues(alpha: 0.85),
                   fontSize: 25,
                   fontFamily: 'alKitab',
                   fontWeight: FontWeight(700),
@@ -463,7 +463,7 @@ class _MonthlyAwradPageState extends State<MonthlyAwradPage> {
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  color: iconColor.withOpacity(0.7),
+                  color: iconColor.withValues(alpha: 0.7),
                   fontSize: 12,
                   fontFamily: 'Nunito',
                 ),
@@ -474,7 +474,7 @@ class _MonthlyAwradPageState extends State<MonthlyAwradPage> {
                 Text(
                   'Coming Soon',
                   style: TextStyle(
-                    color: iconColor.withOpacity(0.5),
+                    color: iconColor.withValues(alpha: 0.5),
                     fontSize: 10,
                     fontFamily: 'Nunito',
                     fontStyle: FontStyle.italic,
