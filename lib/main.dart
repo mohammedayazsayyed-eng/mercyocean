@@ -13,6 +13,7 @@ import 'config/home_screen.dart';
 import 'splash_screen.dart';
 import 'package:mercyocean/service/api_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:mercyocean/service/audio_speed.dart';
 
 // Global notifier for the font script (false = Uthmani, true = IndoPak)
 final ValueNotifier<bool> isIndoPakNotifier = ValueNotifier(false);
@@ -32,6 +33,7 @@ void main() async {
   // Load saved font script preference
   final isIndoPak = prefs.getBool('isIndoPakScript') ?? false;
   isIndoPakNotifier.value = isIndoPak;
+  await loadAudioSpeed();
   
   runApp(const MyApp());
 }

@@ -7,6 +7,7 @@ import 'package:qcf_quran_plus/qcf_quran_plus.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import 'package:share_plus/share_plus.dart';
 import '../main.dart';
+import '../service/audio_speed.dart';
 
 class SurahListReaderScreen extends StatefulWidget {
   final int initialSurah;
@@ -38,6 +39,7 @@ class _SurahListReaderScreenState extends State<SurahListReaderScreen> {
   @override
   void initState() {
     super.initState();
+    audioSpeedNotifier.addListener(_applySpeed);
     _selectedSurah = widget.initialSurah;
 
     if (widget.highlightAyah != null) {
@@ -85,6 +87,7 @@ class _SurahListReaderScreenState extends State<SurahListReaderScreen> {
   }
 
   // Toggles the ayah audio playback
+  void _applySpeed() => _audioPlayer.setSpeed(audioSpeedNotifier.value);
   Future<void> _togglePlay(int startAyah) async {
     if (_isPlaying && _currentPlayingAyah == startAyah) {
       await _stopPlay();
@@ -99,6 +102,7 @@ class _SurahListReaderScreenState extends State<SurahListReaderScreen> {
       await _audioPlayer.setUrl(
         _ayahAudioUrl(_selectedSurah, _currentPlayingAyah),
       );
+      await _audioPlayer.setSpeed(audioSpeedNotifier.value);
       await _audioPlayer.play();
     } catch (e) {
       if (mounted) {
@@ -130,6 +134,7 @@ class _SurahListReaderScreenState extends State<SurahListReaderScreen> {
       await _audioPlayer.setUrl(
         _ayahAudioUrl(_selectedSurah, _currentPlayingAyah),
       );
+      await _audioPlayer.setSpeed(audioSpeedNotifier.value);
       await _audioPlayer.play();
     } catch (e) {
       await _stopPlay();
@@ -174,6 +179,7 @@ class _SurahListReaderScreenState extends State<SurahListReaderScreen> {
   void dispose() {
     _highlightsNotifier.dispose();
     _playerStateSubscription?.cancel();
+    audioSpeedNotifier.removeListener(_applySpeed);
     _audioPlayer.dispose();
     super.dispose();
   }
@@ -235,6 +241,7 @@ class _SurahListReaderScreenState extends State<SurahListReaderScreen> {
         ),
         centerTitle: true,
         actions: [
+          AudioSpeedButton(color: Theme.of(context).colorScheme.primary),
           ValueListenableBuilder<bool>(
             valueListenable: isIndoPakNotifier,
             builder: (context, isIndoPak, child) {

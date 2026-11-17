@@ -8,6 +8,7 @@ import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import 'package:share_plus/share_plus.dart';
 import '../main.dart';
 import 'juz_data.dart';
+import '../service/audio_speed.dart';
 
 class JuzReaderScreen extends StatefulWidget {
   final int juz;
@@ -43,6 +44,7 @@ class _JuzReaderScreenState extends State<JuzReaderScreen> {
   @override
   void initState() {
     super.initState();
+    audioSpeedNotifier.addListener(_applySpeed);
     _juz = widget.juz;
     _segments = juzSegments(_juz);
     _chipKeys = List.generate(_segments.length, (_) => GlobalKey());
@@ -160,7 +162,7 @@ class _JuzReaderScreenState extends State<JuzReaderScreen> {
       ];
     });
   }
-
+void _applySpeed() => _audioPlayer.setSpeed(audioSpeedNotifier.value);
   Future<void> _togglePlay(int surah, int ayah) async {
     if (_isPlaying && _playingSurah == surah && _playingAyah == ayah) {
       await _stopPlay();
@@ -177,6 +179,7 @@ class _JuzReaderScreenState extends State<JuzReaderScreen> {
 
     try {
       await _audioPlayer.setUrl(_ayahAudioUrl(surah, ayah));
+      await _audioPlayer.setSpeed(audioSpeedNotifier.value);
       await _audioPlayer.play();
     } catch (e) {
       if (mounted) {
@@ -254,6 +257,7 @@ class _JuzReaderScreenState extends State<JuzReaderScreen> {
   @override
   void dispose() {
     _playerStateSubscription?.cancel();
+    audioSpeedNotifier.removeListener(_applySpeed);
     _audioPlayer.dispose();
     _chipScrollController.dispose();
     super.dispose();
@@ -430,6 +434,7 @@ class _JuzReaderScreenState extends State<JuzReaderScreen> {
         ),
         centerTitle: true,
         actions: [
+          AudioSpeedButton(color: primaryColor),
           IconButton(
             icon: Icon(Icons.format_list_bulleted, color: primaryColor),
             tooltip: 'Surahs in this Juz',
