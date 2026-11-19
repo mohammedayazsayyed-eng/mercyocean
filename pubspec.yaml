@@ -148,6 +148,7 @@ flutter:
     - assets/images/logos/AppLogo-4.jpeg
     - assets/images/logos/AppLogo-5.jpeg
     - assets/images/logos/AppLogo-6.jpeg
+    - assets/data/qari_timings.json
 
 
   # An image asset can refer to one or more resolution-specific "variants", see

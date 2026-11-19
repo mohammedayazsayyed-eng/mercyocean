@@ -9,6 +9,8 @@ import 'package:share_plus/share_plus.dart';
 import '../main.dart';
 import 'juz_data.dart';
 import '../service/audio_speed.dart';
+import '../service/quran_audio_service.dart';
+import '../service/reciter.dart';
 
 class JuzReaderScreen extends StatefulWidget {
   final int juz;
@@ -39,12 +41,19 @@ class _JuzReaderScreenState extends State<JuzReaderScreen> {
   int _playingSurah = 0;
   int _playingAyah = 0;
 
+  // --- Qari Abdur Rahman Naqshbandi (one MP3 per juz, played by position) ---
+  final QuranAudioService _qari = QuranAudioService();
+  StreamSubscription<AyahTiming?>? _qariAyahSub;
+  StreamSubscription<PlayerState>? _qariStateSub;
+  DateTime _ignoreQariUntil = DateTime.fromMillisecondsSinceEpoch(0);
+
   JuzSegment get _segment => _segments[_segmentIndex];
 
   @override
   void initState() {
     super.initState();
     audioSpeedNotifier.addListener(_applySpeed);
+    reciterNotifier.addListener(_onReciterChanged);
     _juz = widget.juz;
     _segments = juzSegments(_juz);
     _chipKeys = List.generate(_segments.length, (_) => GlobalKey());
@@ -53,6 +62,15 @@ class _JuzReaderScreenState extends State<JuzReaderScreen> {
     _playerStateSubscription = _audioPlayer.playerStateStream.listen((state) {
       if (state.processingState == ProcessingState.completed) {
         _onAyahAudioCompleted();
+      }
+    });
+
+    _qariAyahSub = _qari.activeAyahStream().listen(_onQariAyah);
+    _qariStateSub = _qari.player.playerStateStream.listen((state) {
+      // the last file (juz 30) finished: nothing left to continue into
+      if (state.processingState == ProcessingState.completed &&
+          _qari.loadedFileIndex == 29) {
+        _stopPlay();
       }
     });
   }
@@ -105,18 +123,25 @@ class _JuzReaderScreenState extends State<JuzReaderScreen> {
   Future<void> _changeJuz(int juzNo) async {
     await _stopPlay();
     if (!mounted) return;
+    _showJuz(juzNo, 0);
+  }
+
+  // Shows a juz without touching the audio (used while a recitation carries on
+  // into the next juz).
+  void _showJuz(int juzNo, int segIndex) {
     setState(() {
       _juz = juzNo;
       _segments = juzSegments(juzNo);
-      _segmentIndex = 0;
+      _segmentIndex = segIndex;
       _chipKeys = List.generate(_segments.length, (_) => GlobalKey());
       _itemScrollController = ItemScrollController();
       _highlights = [];
     });
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_chipScrollController.hasClients) {
+      if (_chipScrollController.hasClients && segIndex == 0) {
         _chipScrollController.jumpTo(0);
       }
+      _revealChip(segIndex);
       _jumpToSegmentStart();
     });
   }
@@ -178,9 +203,17 @@ void _applySpeed() => _audioPlayer.setSpeed(audioSpeedNotifier.value);
     _highlightAyah(surah, ayah);
 
     try {
-      await _audioPlayer.setUrl(_ayahAudioUrl(surah, ayah));
-      await _audioPlayer.setSpeed(audioSpeedNotifier.value);
-      await _audioPlayer.play();
+      if (reciterNotifier.value == Reciter.naqshbandi) {
+        _ignoreQariUntil =
+            DateTime.now().add(const Duration(milliseconds: 800));
+        await _audioPlayer.stop();
+        await _qari.playAyah(surah, ayah);
+      } else {
+        await _qari.player.stop();
+        await _audioPlayer.setUrl(_ayahAudioUrl(surah, ayah));
+        await _audioPlayer.setSpeed(audioSpeedNotifier.value);
+        await _audioPlayer.play();
+      }
     } catch (e) {
       if (mounted) {
         setState(() => _isPlaying = false);
@@ -195,6 +228,7 @@ void _applySpeed() => _audioPlayer.setSpeed(audioSpeedNotifier.value);
   // with the next surah of the same Juz.
   Future<void> _onAyahAudioCompleted() async {
     if (!mounted || !_isPlaying) return;
+    if (reciterNotifier.value == Reciter.naqshbandi) return;
 
     final seg = _segment;
     final nextAyah = _playingAyah + 1;
@@ -219,7 +253,58 @@ void _applySpeed() => _audioPlayer.setSpeed(audioSpeedNotifier.value);
     await _stopPlay();
   }
 
+  void _onReciterChanged() {
+    if (_isPlaying) _stopPlay();
+  }
+
+  // Finds the juz and surah portion that hold a given ayah.
+  ({int juz, int seg})? _locate(int surah, int ayah) {
+    for (int j = 1; j <= kTotalJuz; j++) {
+      final segs = juzSegments(j);
+      for (int i = 0; i < segs.length; i++) {
+        final s = segs[i];
+        if (s.surah == surah && ayah >= s.startAyah && ayah <= s.endAyah) {
+          return (juz: j, seg: i);
+        }
+      }
+    }
+    return null;
+  }
+
+  // Called as the Qari's recording moves from ayah to ayah: highlights it and,
+  // when the recitation crosses into another surah or juz, moves the screen.
+  void _onQariAyah(AyahTiming? t) {
+    if (t == null || !mounted || !_isPlaying) return;
+    if (reciterNotifier.value != Reciter.naqshbandi) return;
+    if (DateTime.now().isBefore(_ignoreQariUntil)) return;
+    if (t.surah == _playingSurah && t.ayah == _playingAyah) return;
+
+    _playingSurah = t.surah;
+    _playingAyah = t.ayah;
+
+    final seg = _segment;
+    final inside = t.surah == seg.surah &&
+        t.ayah >= seg.startAyah &&
+        t.ayah <= seg.endAyah;
+    if (inside) {
+      _highlightAyah(t.surah, t.ayah);
+      return;
+    }
+
+    final loc = _locate(t.surah, t.ayah);
+    if (loc == null) return;
+    if (loc.juz != _juz) {
+      _showJuz(loc.juz, loc.seg);
+    } else {
+      _openSegment(loc.seg);
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && _isPlaying) _highlightAyah(t.surah, t.ayah);
+    });
+  }
+
   Future<void> _stopPlay() async {
+    await _qari.player.stop();
     await _audioPlayer.stop();
     if (!mounted) return;
     setState(() {
@@ -257,7 +342,11 @@ void _applySpeed() => _audioPlayer.setSpeed(audioSpeedNotifier.value);
   @override
   void dispose() {
     _playerStateSubscription?.cancel();
+    _qariAyahSub?.cancel();
+    _qariStateSub?.cancel();
     audioSpeedNotifier.removeListener(_applySpeed);
+    reciterNotifier.removeListener(_onReciterChanged);
+    _qari.dispose();
     _audioPlayer.dispose();
     _chipScrollController.dispose();
     super.dispose();
@@ -434,6 +523,7 @@ void _applySpeed() => _audioPlayer.setSpeed(audioSpeedNotifier.value);
         ),
         centerTitle: true,
         actions: [
+          ReciterButton(color: primaryColor),
           AudioSpeedButton(color: primaryColor),
           IconButton(
             icon: Icon(Icons.format_list_bulleted, color: primaryColor),
