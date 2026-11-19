@@ -8,6 +8,8 @@ import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import 'package:share_plus/share_plus.dart';
 import '../main.dart';
 import '../service/audio_speed.dart';
+import '../service/quran_audio_service.dart';
+import '../service/reciter.dart';
 
 class SurahListReaderScreen extends StatefulWidget {
   final int initialSurah;
@@ -36,10 +38,17 @@ class _SurahListReaderScreenState extends State<SurahListReaderScreen> {
   bool _isPlaying = false;
   int _currentPlayingAyah = 0;
 
+  // --- Qari Abdur Rahman Naqshbandi (one MP3 per juz, played by position) ---
+  final QuranAudioService _qari = QuranAudioService();
+  StreamSubscription<AyahTiming?>? _qariAyahSub;
+  StreamSubscription<PlayerState>? _qariStateSub;
+  DateTime _ignoreQariUntil = DateTime.fromMillisecondsSinceEpoch(0);
+
   @override
   void initState() {
     super.initState();
     audioSpeedNotifier.addListener(_applySpeed);
+    reciterNotifier.addListener(_onReciterChanged);
     _selectedSurah = widget.initialSurah;
 
     if (widget.highlightAyah != null) {
@@ -51,6 +60,15 @@ class _SurahListReaderScreenState extends State<SurahListReaderScreen> {
     _playerStateSubscription = _audioPlayer.playerStateStream.listen((state) {
       if (state.processingState == ProcessingState.completed) {
         _onAyahAudioCompleted();
+      }
+    });
+
+    _qariAyahSub = _qari.activeAyahStream().listen(_onQariAyah);
+    _qariStateSub = _qari.player.playerStateStream.listen((state) {
+      // the last file (juz 30) finished: nothing left to continue into
+      if (state.processingState == ProcessingState.completed &&
+          _qari.loadedFileIndex == 29) {
+        _stopPlay();
       }
     });
   }
@@ -99,16 +117,27 @@ class _SurahListReaderScreenState extends State<SurahListReaderScreen> {
     _highlightAndScrollToAyah(_currentPlayingAyah);
 
     try {
-      await _audioPlayer.setUrl(
-        _ayahAudioUrl(_selectedSurah, _currentPlayingAyah),
-      );
-      await _audioPlayer.setSpeed(audioSpeedNotifier.value);
-      await _audioPlayer.play();
+      if (reciterNotifier.value == Reciter.naqshbandi) {
+        _ignoreQariUntil =
+            DateTime.now().add(const Duration(milliseconds: 800));
+        await _audioPlayer.stop();
+        await _qari.playAyah(_selectedSurah, _currentPlayingAyah);
+      } else {
+        await _qari.player.stop();
+        await _audioPlayer.setUrl(
+          _ayahAudioUrl(_selectedSurah, _currentPlayingAyah),
+        );
+        await _audioPlayer.setSpeed(audioSpeedNotifier.value);
+        await _audioPlayer.play();
+      }
     } catch (e) {
       if (mounted) {
         setState(() => _isPlaying = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Unable to play ayah audio')),
+          SnackBar(
+            duration: const Duration(seconds: 8),
+            content: Text('Unable to play: $e'),
+          ),
         );
       }
     }
@@ -117,6 +146,7 @@ class _SurahListReaderScreenState extends State<SurahListReaderScreen> {
   // Advances to the next Ayah once the current one finishes playing
   Future<void> _onAyahAudioCompleted() async {
     if (!mounted || !_isPlaying) return;
+    if (reciterNotifier.value == Reciter.naqshbandi) return;
 
     final maxAyahs = getVerseCount(_selectedSurah);
     final nextAyah = _currentPlayingAyah + 1;
@@ -141,7 +171,41 @@ class _SurahListReaderScreenState extends State<SurahListReaderScreen> {
     }
   }
 
+  void _onReciterChanged() {
+    if (_isPlaying) _stopPlay();
+  }
+
+  // Called as the Qari's recording moves from ayah to ayah: highlights it and,
+  // when the recitation carries on into the next surah, follows it.
+  void _onQariAyah(AyahTiming? t) {
+    if (t == null || !mounted || !_isPlaying) return;
+    if (reciterNotifier.value != Reciter.naqshbandi) return;
+    if (DateTime.now().isBefore(_ignoreQariUntil)) return;
+    if (t.surah == _selectedSurah && t.ayah == _currentPlayingAyah) return;
+
+    _currentPlayingAyah = t.ayah;
+
+    if (t.surah == _selectedSurah) {
+      _highlightAndScrollToAyah(t.ayah);
+      setState(() {});
+      return;
+    }
+
+    setState(() {
+      _selectedSurah = t.surah;
+      _highlightsNotifier.value = [];
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_isPlaying) return;
+      if (_itemScrollController.isAttached) {
+        _itemScrollController.jumpTo(index: 0);
+      }
+      _highlightAndScrollToAyah(t.ayah);
+    });
+  }
+
   Future<void> _stopPlay() async {
+    await _qari.player.stop();
     await _audioPlayer.stop();
     if (!mounted) return;
     setState(() {
@@ -179,7 +243,11 @@ class _SurahListReaderScreenState extends State<SurahListReaderScreen> {
   void dispose() {
     _highlightsNotifier.dispose();
     _playerStateSubscription?.cancel();
+    _qariAyahSub?.cancel();
+    _qariStateSub?.cancel();
     audioSpeedNotifier.removeListener(_applySpeed);
+    reciterNotifier.removeListener(_onReciterChanged);
+    _qari.dispose();
     _audioPlayer.dispose();
     super.dispose();
   }
@@ -241,6 +309,7 @@ class _SurahListReaderScreenState extends State<SurahListReaderScreen> {
         ),
         centerTitle: true,
         actions: [
+          ReciterButton(color: primaryColor),
           AudioSpeedButton(color: Theme.of(context).colorScheme.primary),
           ValueListenableBuilder<bool>(
             valueListenable: isIndoPakNotifier,
