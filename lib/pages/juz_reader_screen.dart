@@ -194,9 +194,10 @@ class _JuzReaderScreenState extends State<JuzReaderScreen> {
       ];
     });
   }
-  // TEMPORARY: shows what the handover did
+  // Debug messages are switched off; set to true to see handover details.
+  static const bool _showDebug = false;
   void _debugNote(String m) {
-    if (!mounted) return;
+    if (!_showDebug || !mounted) return;
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       duration: const Duration(milliseconds: 1500),
