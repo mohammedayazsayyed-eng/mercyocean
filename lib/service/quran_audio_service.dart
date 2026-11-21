@@ -35,6 +35,11 @@ class QuranAudioService {
   List<String> _files = [];
   final Map<String, AyahTiming> _byKey = {};
   final Map<int, List<AyahTiming>> _byFileIndex = {};
+  final List<AyahTiming> _ordered = [];
+  final Map<String, int> _orderIndex = {};
+  Future<void>? _preparing;
+  AyahTiming? _preparedFor;
+  String? lastPrepError;
   int? _loadedFileIndex;
   bool _isLoaded = false;
   int _playToken = 0;
@@ -74,6 +79,8 @@ class QuranAudioService {
         endMs: endMs,
       );
       _byKey[timing.key] = timing;
+      _orderIndex[timing.key] = _ordered.length;
+      _ordered.add(timing);
       _byFileIndex.putIfAbsent(fileIndex, () => []).add(timing);
     }
 
@@ -93,14 +100,76 @@ class QuranAudioService {
     player.setSpeed(audioSpeedNotifier.value);
   }
 
-  // The files in the bucket are named "01. cüz.mp3" ... "30. cüz.mp3"
-  // (the ü is stored as "u" plus a combining diaeresis, as in the R2 object URL).
+  // the bucket's files are named like "01. cüz.mp3" (ü written as u + U+0308)
   String urlForFileIndex(int fileIndex) {
     final nn = (fileIndex + 1).toString().padLeft(2, '0');
     return '$_baseUrl/${Uri.encodeComponent('$nn. cu\u0308z.mp3')}';
   }
 
   AyahTiming? timingFor(int surah, int ayah) => _byKey['$surah:$ayah'];
+
+  /// The ayah that follows [surah]:[ayah] in the recording (may be in the next surah).
+  AyahTiming? nextAfter(int surah, int ayah) {
+    final i = _orderIndex['$surah:$ayah'];
+    if (i == null || i + 1 >= _ordered.length) return null;
+    return _ordered[i + 1];
+  }
+
+  /// Loads the juz recording at the start of [surah]:[ayah] and keeps it paused,
+  /// ready to take over with [playPrepared] (continuous recitation after a clip).
+  void prepareAt(int surah, int ayah) {
+    _preparing = _prepare(surah, ayah);
+  }
+
+  Future<void> _prepare(int surah, int ayah) async {
+    try {
+      await init();
+      final target = timingFor(surah, ayah);
+      if (target == null) return;
+      final token = ++_playToken;
+      _preparedFor = null;
+      await player.pause();
+      final start = Duration(milliseconds: target.startMs);
+      if (_loadedFileIndex == target.fileIndex && player.audioSource != null) {
+        await player.seek(start);
+      } else {
+        _loadedFileIndex = null;
+        await player.setUrl(urlForFileIndex(target.fileIndex),
+            initialPosition: start);
+        if (token != _playToken) return;
+        _loadedFileIndex = target.fileIndex;
+      }
+      if (token != _playToken) return;
+      await player.setSpeed(audioSpeedNotifier.value);
+      _preparedFor = target;
+    } catch (e) {
+      _preparedFor = null;
+      lastPrepError = '$e';
+    }
+  }
+
+  /// Starts the prepared recording. Returns false if it is not ready in time.
+  Future<bool> playPrepared(
+      {Duration wait = const Duration(milliseconds: 1500)}) async {
+    final job = _preparing;
+    if (job == null) return false;
+    try {
+      await job.timeout(wait);
+    } catch (_) {
+      return false;
+    }
+    if (_preparedFor == null) return false;
+    _preparedFor = null;
+    unawaited(player.play());
+    return true;
+  }
+
+  /// Forgets a pending preparation (a newer tap or stop).
+  void cancelPrepared() {
+    _playToken++;
+    _preparedFor = null;
+    _preparing = null;
+  }
 
   /// Plays from a specific surah and ayah, switching juz MP3 if needed.
   Future<void> playAyah(int surah, int ayah) async {

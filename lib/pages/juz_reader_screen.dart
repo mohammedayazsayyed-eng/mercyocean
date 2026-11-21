@@ -10,6 +10,7 @@ import '../main.dart';
 import 'juz_data.dart';
 import '../service/audio_speed.dart';
 import '../service/quran_audio_service.dart';
+import '../service/qari_clip_cache.dart';
 import '../service/reciter.dart';
 
 class JuzReaderScreen extends StatefulWidget {
@@ -46,6 +47,8 @@ class _JuzReaderScreenState extends State<JuzReaderScreen> {
   StreamSubscription<AyahTiming?>? _qariAyahSub;
   StreamSubscription<PlayerState>? _qariStateSub;
   DateTime _ignoreQariUntil = DateTime.fromMillisecondsSinceEpoch(0);
+  bool _qariLive = false; // the juz recording has taken over from the clip
+  AyahTiming? _handoverTo;
 
   JuzSegment get _segment => _segments[_segmentIndex];
 
@@ -78,6 +81,10 @@ class _JuzReaderScreenState extends State<JuzReaderScreen> {
   String _ayahAudioUrl(int surahNumber, int verseNumber) {
     final surahPart = surahNumber.toString().padLeft(3, '0');
     final ayahPart = verseNumber.toString().padLeft(3, '0');
+    if (reciterNotifier.value == Reciter.naqshbandi) {
+      // Qari Abdur Rahman Naqshbandi: one clip per ayah (same layout as Alafasy)
+      return 'https://pub-51e5db1746bd40cabed10bc6f62928e5.r2.dev/qari/$surahPart$ayahPart.mp3';
+    }
     return 'https://everyayah.com/data/Alafasy_128kbps/$surahPart$ayahPart.mp3';
   }
 
@@ -187,7 +194,50 @@ class _JuzReaderScreenState extends State<JuzReaderScreen> {
       ];
     });
   }
-void _applySpeed() => _audioPlayer.setSpeed(audioSpeedNotifier.value);
+  // TEMPORARY: shows what the handover did
+  void _debugNote(String m) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      duration: const Duration(milliseconds: 1500),
+      content: Text(m),
+    ));
+  }
+
+  // Qari: while this clip plays, load the juz recording at the NEXT ayah so it
+  // can take over the moment the clip ends (continuous recitation).
+  Future<void> _prepareHandover(int surah, int ayah) async {
+    try {
+      await _qari.init();
+      final next = _qari.nextAfter(surah, ayah);
+      _handoverTo = next;
+      if (next != null) _qari.prepareAt(next.surah, next.ayah);
+    } catch (_) {
+      _handoverTo = null;
+    }
+  }
+
+  // Sets the audio of one ayah. For the Qari the clip comes from the phone if it
+  // was already downloaded; the next two ayahs are downloaded while it plays.
+  Future<void> _setAyahSource(int surah, int ayah) async {
+    if (reciterNotifier.value == Reciter.naqshbandi) {
+      final cache = QariClipCache.instance;
+      final path = await cache.cachedPath(surah, ayah);
+      if (path != null) {
+        await _audioPlayer.setFilePath(path);
+      } else {
+        await _audioPlayer.setUrl(_ayahAudioUrl(surah, ayah));
+      }
+      final total = getVerseCount(surah);
+      for (int n = ayah + 1; n <= ayah + 2 && n <= total; n++) {
+        unawaited(cache.prefetch(surah, n));
+      }
+    } else {
+      await _audioPlayer.setUrl(_ayahAudioUrl(surah, ayah));
+    }
+  }
+
+  void _applySpeed() => _audioPlayer.setSpeed(audioSpeedNotifier.value);
   Future<void> _togglePlay(int surah, int ayah) async {
     if (_isPlaying && _playingSurah == surah && _playingAyah == ayah) {
       await _stopPlay();
@@ -203,17 +253,16 @@ void _applySpeed() => _audioPlayer.setSpeed(audioSpeedNotifier.value);
     _highlightAyah(surah, ayah);
 
     try {
+      _qariLive = false;
+      _handoverTo = null;
+      _qari.cancelPrepared();
+      await _qari.player.pause();
+      await _setAyahSource(surah, ayah);
+      await _audioPlayer.setSpeed(audioSpeedNotifier.value);
       if (reciterNotifier.value == Reciter.naqshbandi) {
-        _ignoreQariUntil =
-            DateTime.now().add(const Duration(milliseconds: 800));
-        await _audioPlayer.stop();
-        await _qari.playAyah(surah, ayah);
-      } else {
-        await _qari.player.stop();
-        await _audioPlayer.setUrl(_ayahAudioUrl(surah, ayah));
-        await _audioPlayer.setSpeed(audioSpeedNotifier.value);
-        await _audioPlayer.play();
+        await _prepareHandover(surah, ayah);
       }
+      await _audioPlayer.play();
     } catch (e) {
       if (mounted) {
         setState(() => _isPlaying = false);
@@ -228,7 +277,25 @@ void _applySpeed() => _audioPlayer.setSpeed(audioSpeedNotifier.value);
   // with the next surah of the same Juz.
   Future<void> _onAyahAudioCompleted() async {
     if (!mounted || !_isPlaying) return;
-    if (reciterNotifier.value == Reciter.naqshbandi) return;
+    if (_qariLive) return; // the juz recording is in control now
+    if (reciterNotifier.value == Reciter.naqshbandi) {
+      if (_handoverTo == null) {
+        _debugNote('handover: no target');
+      } else {
+        final next = _handoverTo!;
+        final sw = Stopwatch()..start();
+        final ok = await _qari.playPrepared();
+        _debugNote(ok
+            ? 'handover OK: juz recording took over (${sw.elapsedMilliseconds} ms)'
+            : 'handover FAILED (${sw.elapsedMilliseconds} ms): ${_qari.lastPrepError ?? "not ready in time"}');
+        if (ok) {
+          _qariLive = true;
+          _handoverTo = null;
+          _onQariAyah(next);
+          return;
+        }
+      }
+    }
 
     final seg = _segment;
     final nextAyah = _playingAyah + 1;
@@ -276,6 +343,7 @@ void _applySpeed() => _audioPlayer.setSpeed(audioSpeedNotifier.value);
   void _onQariAyah(AyahTiming? t) {
     if (t == null || !mounted || !_isPlaying) return;
     if (reciterNotifier.value != Reciter.naqshbandi) return;
+    if (!_qariLive) return;
     if (DateTime.now().isBefore(_ignoreQariUntil)) return;
     if (t.surah == _playingSurah && t.ayah == _playingAyah) return;
 
@@ -304,6 +372,10 @@ void _applySpeed() => _audioPlayer.setSpeed(audioSpeedNotifier.value);
   }
 
   Future<void> _stopPlay() async {
+    _isPlaying = false; // first, so no player event can start another ayah
+    _qariLive = false;
+    _handoverTo = null;
+    _qari.cancelPrepared();
     await _qari.player.stop();
     await _audioPlayer.stop();
     if (!mounted) return;
