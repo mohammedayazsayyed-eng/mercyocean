@@ -172,6 +172,17 @@ class _SurahListReaderScreenState extends State<SurahListReaderScreen> {
       _handoverTo = null;
       _qari.cancelPrepared();
       await _qari.player.pause();
+            // Qari, ayah 1 of a short surah: play straight from the juz recording
+      if (reciterNotifier.value == Reciter.naqshbandi &&
+          _currentPlayingAyah == 1 &&
+          getVerseCount(_selectedSurah) <= 60) {
+        await _audioPlayer.stop();
+        _qariLive = false;
+        await _qari.playAyah(_selectedSurah, 1);
+        if (!mounted || !_isPlaying) return;
+        _qariLive = true;
+        return;
+      }
       await _setAyahSource(_selectedSurah, _currentPlayingAyah);
       await _audioPlayer.setSpeed(audioSpeedNotifier.value);
       if (reciterNotifier.value == Reciter.naqshbandi) {
