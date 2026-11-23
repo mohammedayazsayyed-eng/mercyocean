@@ -796,7 +796,7 @@ class _JuzReaderScreenState extends State<JuzReaderScreen> {
                                             softWrap: true,
                                             text: TextSpan(
                                               style: TextStyle(
-                                                fontFamily: 'IndoPak',
+                                                fontFamily: 'IndoPakNew',
                                                 fontSize: 24,
                                                 height: 2.0,
                                                 color: Theme.of(
