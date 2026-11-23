@@ -302,7 +302,7 @@ class _SurahListReaderScreenState extends State<SurahListReaderScreen> {
     String text = getVerse(surahNumber, verseNumber, verseEndSymbol: true);
     text +=
         '\n\nSurah ${getSurahNameEnglish(surahNumber)} ($surahNumber:$verseNumber)';
-    text += '\n\nMercy Ocean App\nNaqshabndi Sufi Order';
+    text += '\n\nMercy Ocean App\nNaqshbandi Sufi Order';
     await Clipboard.setData(ClipboardData(text: text));
     if (mounted) {
       ScaffoldMessenger.of(
@@ -317,7 +317,7 @@ class _SurahListReaderScreenState extends State<SurahListReaderScreen> {
     await SharePlus.instance.share(
       ShareParams(
         text:
-            '$text\n\nSurah $surahName ($surahNumber:$verseNumber)\n\nMercy Ocean App\nNaqshabndi Sufi Order',
+            '$text\n\nSurah $surahName ($surahNumber:$verseNumber)\n\nMercy Ocean App\nNaqshbandi Sufi Order',
       ),
     );
   }
