@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-enum Reciter { alafasy, naqshbandi }
+enum Reciter { naqshbandi, alafasy }
 
 const Map<Reciter, String> kReciterNames = {
   Reciter.alafasy: 'Mishary Alafasy',
@@ -9,7 +9,7 @@ const Map<Reciter, String> kReciterNames = {
 };
 
 /// The reciter chosen by the user (remembered between launches).
-final ValueNotifier<Reciter> reciterNotifier = ValueNotifier(Reciter.alafasy);
+final ValueNotifier<Reciter> reciterNotifier = ValueNotifier(Reciter.naqshbandi);
 
 const String _kReciterKey = 'reciter';
 
@@ -19,7 +19,7 @@ Future<void> loadReciter() async {
     final saved = prefs.getString(_kReciterKey);
     reciterNotifier.value = Reciter.values.firstWhere(
       (r) => r.name == saved,
-      orElse: () => Reciter.alafasy,
+      orElse: () => Reciter.naqshbandi,
     );
   } catch (_) {}
 }
