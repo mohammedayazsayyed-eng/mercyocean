@@ -614,18 +614,6 @@ class _JuzReaderScreenState extends State<JuzReaderScreen> {
             tooltip: 'Surahs in this Juz',
             onPressed: () => _showSurahSheet(primaryColor),
           ),
-          ValueListenableBuilder<bool>(
-            valueListenable: isIndoPakNotifier,
-            builder: (context, isIndoPak, child) {
-              return IconButton(
-                icon: Icon(Icons.text_format, color: primaryColor),
-                tooltip: isIndoPak ? 'Switch to Uthmani' : 'Switch to IndoPak',
-                onPressed: () {
-                  toggleFontScript(!isIndoPak);
-                },
-              );
-            },
-          ),
         ],
       ),
       body: SafeArea(
@@ -771,54 +759,9 @@ class _JuzReaderScreenState extends State<JuzReaderScreen> {
                                 ],
                               ),
                             ),
-                            ValueListenableBuilder<bool>(
-                              valueListenable: isIndoPakNotifier,
-                              builder: (context, isIndoPak, child) {
-                                // Normalize hidden no-break spaces / newlines
-                                final String indoPakVerse =
-                                    getVerse(surahNumber, verseNumber)
-                                        .replaceAll(
-                                          RegExp(
-                                            r'[\u00A0\u202F\u2007\u2060\uFEFF\r\n]+',
-                                          ),
-                                          ' ',
-                                        )
-                                        .trim();
-
-                                return Padding(
-                                  padding: const EdgeInsets.all(16.0),
-                                  child: isIndoPak
-                                      ? SizedBox(
-                                          width: double.infinity,
-                                          child: RichText(
-                                            textAlign: TextAlign.start,
-                                            textDirection: TextDirection.rtl,
-                                            softWrap: true,
-                                            text: TextSpan(
-                                              style: TextStyle(
-                                                fontFamily: 'IndoPakNew',
-                                                fontSize: 24,
-                                                height: 2.0,
-                                                color: Theme.of(
-                                                  context,
-                                                ).textTheme.bodyLarge?.color,
-                                              ),
-                                              children: [
-                                                TextSpan(text: indoPakVerse),
-                                                TextSpan(
-                                                  text: ' ﴿$verseNumber﴾',
-                                                  style: const TextStyle(
-                                                    fontSize: 20,
-                                                    fontWeight: FontWeight.bold,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        )
-                                      : othmanicText,
-                                );
-                              },
+                            Padding(
+                              padding: const EdgeInsets.all(16.0),
+                              child: othmanicText,
                             ),
                           ],
                         ),

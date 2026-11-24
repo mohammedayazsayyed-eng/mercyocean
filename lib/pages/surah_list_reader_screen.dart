@@ -39,12 +39,12 @@ class _SurahListReaderScreenState extends State<SurahListReaderScreen> {
   StreamSubscription<PlayerState>? _playerStateSubscription;
   bool _isPlaying = false;
   int _currentPlayingAyah = 0;
+  int _playSessionId = 0;
 
   // --- Qari Abdur Rahman Naqshbandi (one MP3 per juz, played by position) ---
   final QuranAudioService _qari = QuranAudioService();
   StreamSubscription<AyahTiming?>? _qariAyahSub;
   StreamSubscription<PlayerState>? _qariStateSub;
-  DateTime _ignoreQariUntil = DateTime.fromMillisecondsSinceEpoch(0);
   bool _qariLive = false; // the juz recording has taken over from the clip
   AyahTiming? _handoverTo;
 
@@ -112,28 +112,32 @@ class _SurahListReaderScreenState extends State<SurahListReaderScreen> {
     ];
   }
 
-  // Toggles the ayah audio playback
   // Debug messages are switched off; set to true to see handover details.
   static const bool _showDebug = false;
   void _debugNote(String m) {
     if (!_showDebug || !mounted) return;
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      duration: const Duration(milliseconds: 1500),
-      content: Text(m),
-    ));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        duration: const Duration(milliseconds: 1500),
+        content: Text(m),
+      ),
+    );
   }
 
   // Qari: while this clip plays, load the juz recording at the NEXT ayah so it
   // can take over the moment the clip ends (continuous recitation).
-  Future<void> _prepareHandover(int surah, int ayah) async {
+  Future<void> _prepareHandover(int surah, int ayah, int sessionId) async {
     try {
       await _qari.init();
+      if (!mounted || sessionId != _playSessionId || !_isPlaying) return;
       final next = _qari.nextAfter(surah, ayah);
       _handoverTo = next;
       if (next != null) _qari.prepareAt(next.surah, next.ayah);
     } catch (_) {
-      _handoverTo = null;
+      if (sessionId == _playSessionId) {
+        _handoverTo = null;
+      }
     }
   }
 
@@ -158,12 +162,14 @@ class _SurahListReaderScreenState extends State<SurahListReaderScreen> {
   }
 
   void _applySpeed() => _audioPlayer.setSpeed(audioSpeedNotifier.value);
+
   Future<void> _togglePlay(int startAyah) async {
     if (_isPlaying && _currentPlayingAyah == startAyah) {
       await _stopPlay();
       return;
     }
 
+    final sessionId = ++_playSessionId;
     _currentPlayingAyah = startAyah;
     setState(() => _isPlaying = true);
     _highlightAndScrollToAyah(_currentPlayingAyah);
@@ -173,25 +179,33 @@ class _SurahListReaderScreenState extends State<SurahListReaderScreen> {
       _handoverTo = null;
       _qari.cancelPrepared();
       await _qari.player.pause();
-            // Qari, ayah 1 of a short surah: play straight from the juz recording
+      if (!mounted || sessionId != _playSessionId || !_isPlaying) return;
+
+      // Qari, ayah 1 of a short surah: play straight from the juz recording
       if (reciterNotifier.value == Reciter.naqshbandi &&
           _currentPlayingAyah == 1 &&
           getVerseCount(_selectedSurah) <= 60) {
         await _audioPlayer.stop();
+        if (!mounted || sessionId != _playSessionId || !_isPlaying) return;
         _qariLive = false;
         await _qari.playAyah(_selectedSurah, 1);
-        if (!mounted || !_isPlaying) return;
+        if (!mounted || sessionId != _playSessionId || !_isPlaying) return;
         _qariLive = true;
         return;
       }
+
       await _setAyahSource(_selectedSurah, _currentPlayingAyah);
+      if (!mounted || sessionId != _playSessionId || !_isPlaying) return;
+
       await _audioPlayer.setSpeed(audioSpeedNotifier.value);
       if (reciterNotifier.value == Reciter.naqshbandi) {
-        await _prepareHandover(_selectedSurah, _currentPlayingAyah);
+        await _prepareHandover(_selectedSurah, _currentPlayingAyah, sessionId);
+        if (!mounted || sessionId != _playSessionId || !_isPlaying) return;
       }
+
       await _audioPlayer.play();
     } catch (e) {
-      if (mounted) {
+      if (mounted && sessionId == _playSessionId) {
         setState(() => _isPlaying = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -207,6 +221,8 @@ class _SurahListReaderScreenState extends State<SurahListReaderScreen> {
   Future<void> _onAyahAudioCompleted() async {
     if (!mounted || !_isPlaying) return;
     if (_qariLive) return; // the juz recording is in control now
+    final sessionId = _playSessionId;
+
     if (reciterNotifier.value == Reciter.naqshbandi) {
       if (_handoverTo == null) {
         _debugNote('handover: no target');
@@ -214,9 +230,12 @@ class _SurahListReaderScreenState extends State<SurahListReaderScreen> {
         final next = _handoverTo!;
         final sw = Stopwatch()..start();
         final ok = await _qari.playPrepared();
-        _debugNote(ok
-            ? 'handover OK: juz recording took over (${sw.elapsedMilliseconds} ms)'
-            : 'handover FAILED (${sw.elapsedMilliseconds} ms): ${_qari.lastPrepError ?? "not ready in time"}');
+        if (!mounted || sessionId != _playSessionId || !_isPlaying) return;
+        _debugNote(
+          ok
+              ? 'handover OK: juz recording took over (${sw.elapsedMilliseconds} ms)'
+              : 'handover FAILED (${sw.elapsedMilliseconds} ms): ${_qari.lastPrepError ?? "not ready in time"}',
+        );
         if (ok) {
           _qariLive = true;
           _handoverTo = null;
@@ -240,13 +259,19 @@ class _SurahListReaderScreenState extends State<SurahListReaderScreen> {
 
     try {
       await _setAyahSource(_selectedSurah, _currentPlayingAyah);
+      if (!mounted || sessionId != _playSessionId || !_isPlaying) return;
+
       await _audioPlayer.setSpeed(audioSpeedNotifier.value);
       if (reciterNotifier.value == Reciter.naqshbandi) {
-        await _prepareHandover(_selectedSurah, _currentPlayingAyah);
+        await _prepareHandover(_selectedSurah, _currentPlayingAyah, sessionId);
+        if (!mounted || sessionId != _playSessionId || !_isPlaying) return;
       }
+
       await _audioPlayer.play();
     } catch (e) {
-      await _stopPlay();
+      if (sessionId == _playSessionId) {
+        await _stopPlay();
+      }
     }
   }
 
@@ -260,9 +285,9 @@ class _SurahListReaderScreenState extends State<SurahListReaderScreen> {
     if (t == null || !mounted || !_isPlaying) return;
     if (reciterNotifier.value != Reciter.naqshbandi) return;
     if (!_qariLive) return;
-    if (DateTime.now().isBefore(_ignoreQariUntil)) return;
     if (t.surah == _selectedSurah && t.ayah == _currentPlayingAyah) return;
 
+    final sessionId = _playSessionId;
     _currentPlayingAyah = t.ayah;
 
     if (t.surah == _selectedSurah) {
@@ -276,7 +301,7 @@ class _SurahListReaderScreenState extends State<SurahListReaderScreen> {
       _highlightsNotifier.value = [];
     });
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted || !_isPlaying) return;
+      if (!mounted || !_isPlaying || sessionId != _playSessionId) return;
       if (_itemScrollController.isAttached) {
         _itemScrollController.jumpTo(index: 0);
       }
@@ -285,15 +310,15 @@ class _SurahListReaderScreenState extends State<SurahListReaderScreen> {
   }
 
   Future<void> _stopPlay() async {
+    final sessionId = ++_playSessionId;
     _isPlaying = false; // first, so no player event can start another ayah
     _qariLive = false;
     _handoverTo = null;
     _qari.cancelPrepared();
     await _qari.player.stop();
     await _audioPlayer.stop();
-    if (!mounted) return;
+    if (!mounted || sessionId != _playSessionId) return;
     setState(() {
-      _isPlaying = false;
       _currentPlayingAyah = 0;
     });
     _highlightsNotifier.value = [];
@@ -325,6 +350,7 @@ class _SurahListReaderScreenState extends State<SurahListReaderScreen> {
 
   @override
   void dispose() {
+    _playSessionId++;
     _highlightsNotifier.dispose();
     _playerStateSubscription?.cancel();
     _qariAyahSub?.cancel();
@@ -390,19 +416,21 @@ class _SurahListReaderScreenState extends State<SurahListReaderScreen> {
                   ),
                 );
               }),
-              onChanged: (value) {
-                if (value != null) {
-                  // Stop playback when switching surahs
-                  _stopPlay();
+              onChanged: (value) async {
+                if (value != null && value != _selectedSurah) {
+                  await _stopPlay();
+                  if (!mounted) return;
 
                   setState(() {
                     _selectedSurah = value;
                     _highlightsNotifier.value = [];
                   });
 
-                  if (_itemScrollController.isAttached) {
-                    _itemScrollController.jumpTo(index: 0);
-                  }
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted && _itemScrollController.isAttached) {
+                      _itemScrollController.jumpTo(index: 0);
+                    }
+                  });
                 }
               },
             ),
@@ -411,23 +439,7 @@ class _SurahListReaderScreenState extends State<SurahListReaderScreen> {
         centerTitle: true,
         actions: [
           ReciterButton(color: primaryColor),
-          AudioSpeedButton(color: Theme.of(context).colorScheme.primary),
-          ValueListenableBuilder<bool>(
-            valueListenable: isIndoPakNotifier,
-            builder: (context, isIndoPak, child) {
-              return IconButton(
-                icon: Icon(
-                  Icons.text_format, // A nice font icon
-                  color: primaryColor,
-                ),
-                tooltip: isIndoPak ? 'Switch to Uthmani' : 'Switch to IndoPak',
-                onPressed: () {
-                  // This flips the true/false value every time it's tapped!
-                  toggleFontScript(!isIndoPak);
-                },
-              );
-            },
-          ),
+          AudioSpeedButton(color: primaryColor),
         ],
       ),
       body: SafeArea(
@@ -438,7 +450,7 @@ class _SurahListReaderScreenState extends State<SurahListReaderScreen> {
           fontSize: 25,
           initialScrollIndex: widget.highlightAyah ?? 0,
           isTajweed: true,
-          isDarkMode: Theme.of(context).brightness == Brightness.dark,
+          isDarkMode: isDark,
           ayahBuilder:
               (
                 context,
@@ -506,7 +518,7 @@ class _SurahListReaderScreenState extends State<SurahListReaderScreen> {
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Text(
-                                'آية $verseNumber',
+                                ' $verseNumber',
                                 style: TextStyle(
                                   fontWeight: FontWeight.bold,
                                   color: primaryColor,
@@ -554,54 +566,9 @@ class _SurahListReaderScreenState extends State<SurahListReaderScreen> {
                           ],
                         ),
                       ),
-                      ValueListenableBuilder<bool>(
-                        valueListenable: isIndoPakNotifier,
-                        builder: (context, isIndoPak, child) {
-                          // Normalize hidden no-break spaces / newlines so text wraps naturally
-                          final String indoPakVerse =
-                              getVerse(surahNumber, verseNumber)
-                                  .replaceAll(
-                                    RegExp(
-                                      r'[\u00A0\u202F\u2007\u2060\uFEFF\r\n]+',
-                                    ),
-                                    ' ',
-                                  )
-                                  .trim();
-
-                          return Padding(
-                            padding: const EdgeInsets.all(16.0),
-                            child: isIndoPak
-                                ? SizedBox(
-                                    width: double.infinity,
-                                    child: RichText(
-                                      textAlign: TextAlign.start, // was justify
-                                      textDirection: TextDirection.rtl,
-                                      softWrap: true,
-                                      text: TextSpan(
-                                        style: TextStyle(
-                                          fontFamily: 'IndoPakNew',
-                                          fontSize: 24,
-                                          height: 2.0,
-                                          color: Theme.of(
-                                            context,
-                                          ).textTheme.bodyLarge?.color,
-                                        ),
-                                        children: [
-                                          TextSpan(text: indoPakVerse),
-                                          TextSpan(
-                                            text: ' ﴿$verseNumber﴾',
-                                            style: const TextStyle(
-                                              fontSize: 20,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  )
-                                : othmanicText,
-                          );
-                        },
+                      Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: othmanicText,
                       ),
                     ],
                   ),
