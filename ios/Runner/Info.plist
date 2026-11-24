@@ -70,5 +70,10 @@
 <string>This app requires access to your location to calculate the exact Qiblah direction.</string>
 <key>NSLocationAlwaysUsageDescription</key>
 <string>This app requires access to your location to calculate the exact Qiblah direction.</string>
-</dict>
+
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>audio</string>
+	</array>
+	</dict>
 </plist>
