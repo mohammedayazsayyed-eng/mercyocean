@@ -318,7 +318,7 @@ class _JuzReaderScreenState extends State<JuzReaderScreen> {
         if (!mounted || sessionId != _playSessionId || !_isPlaying) return;
         _debugNote(
           ok
-              ? 'handover OK: juz recording took over (\${sw.elapsedMilliseconds} ms)'
+              ? 'handover OK: juz recording took over (${sw.elapsedMilliseconds} ms)'
               : 'handover FAILED (${sw.elapsedMilliseconds} ms):${_qari.lastPrepError ?? "not ready in time"}',
         );
         if (ok) {
@@ -424,7 +424,7 @@ class _JuzReaderScreenState extends State<JuzReaderScreen> {
   Future<void> _copyAyah(int surahNumber, int verseNumber) async {
     String text = getVerse(surahNumber, verseNumber, verseEndSymbol: true);
     text +=
-        '\n\nSurah \${getSurahNameEnglish(surahNumber)} ($surahNumber:$verseNumber)';
+        '\n\nSurah ${getSurahNameEnglish(surahNumber)} ($surahNumber:$verseNumber)';
     text += '\n\nMercy Ocean App\nNaqshbandi Sufi Order';
     await Clipboard.setData(ClipboardData(text: text));
     if (mounted) {
@@ -440,7 +440,7 @@ class _JuzReaderScreenState extends State<JuzReaderScreen> {
     await SharePlus.instance.share(
       ShareParams(
         text:
-            '$text\n\nSurah$surahName ($surahNumber:$verseNumber)\n\nMercy Ocean App\nNaqshbandi Sufi Order',
+            '$text\n\nSurah $surahName ($surahNumber:$verseNumber)\n\nMercy Ocean App\nNaqshbandi Sufi Order',
       ),
     );
   }
@@ -482,7 +482,7 @@ class _JuzReaderScreenState extends State<JuzReaderScreen> {
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
                   child: Text(
-                    'Surahs in Juz \$_juz',
+                    'Surahs in Juz $_juz',
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontFamily: 'Poppins',
@@ -506,7 +506,7 @@ class _JuzReaderScreenState extends State<JuzReaderScreen> {
                           radius: 16,
                           backgroundColor: primaryColor.withValues(alpha: 0.12),
                           child: Text(
-                            '\${s.surah}',
+                            '${s.surah}',
                             style: TextStyle(
                               fontSize: 12,
                               color: primaryColor,
@@ -520,8 +520,8 @@ class _JuzReaderScreenState extends State<JuzReaderScreen> {
                         ),
                         subtitle: Text(
                           s.isFullSurah
-                              ? 'Full surah (\${s.endAyah} ayahs)'
-                              : 'Ayah ${s.startAyah} to${s.endAyah}',
+                              ? 'Full surah (${s.endAyah} ayahs)'
+                              : 'Ayah ${s.startAyah} to ${s.endAyah}',
                           style: const TextStyle(
                             fontFamily: 'Poppins',
                             fontSize: 12,
@@ -570,7 +570,7 @@ class _JuzReaderScreenState extends State<JuzReaderScreen> {
                 label: Text(
                   _segments[i].isFullSurah
                       ? getSurahNameEnglish(_segments[i].surah)
-                      : '\${getSurahNameEnglish(_segments[i].surah)} '
+                      : '${getSurahNameEnglish(_segments[i].surah)} '
                             '${_segments[i].startAyah}-${_segments[i].endAyah}',
                   style: TextStyle(
                     fontFamily: 'Poppins',
@@ -611,7 +611,7 @@ class _JuzReaderScreenState extends State<JuzReaderScreen> {
               return DropdownMenuItem(
                 value: juzNo,
                 child: Text(
-                  'Juz \$juzNo',
+                  'Juz $juzNo',
                   style: TextStyle(
                     color: primaryColor,
                     fontWeight: FontWeight.w500,
@@ -730,7 +730,7 @@ class _JuzReaderScreenState extends State<JuzReaderScreen> {
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                     child: Text(
-                                      ' \$verseNumber',
+                                      ' $verseNumber',
                                       style: TextStyle(
                                         fontWeight: FontWeight.bold,
                                         color: primaryColor,
@@ -800,8 +800,8 @@ class _JuzReaderScreenState extends State<JuzReaderScreen> {
                       if (!hasNextSegment && !hasNextJuz) return card;
 
                       final String nextLabel = hasNextSegment
-                          ? 'Next: \${getSurahNameEnglish(_segments[_segmentIndex + 1].surah)}'
-                          : 'Next: Juz \${_juz + 1}';
+                          ? 'Next: ${getSurahNameEnglish(_segments[_segmentIndex + 1].surah)}'
+                          : 'Next: Juz ${_juz + 1}';
 
                       return Column(
                         children: [
