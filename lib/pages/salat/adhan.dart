@@ -15,6 +15,7 @@ class _AdhanPageState extends State<AdhanPage> {
   List<WordpressPost> _posts = [];
   bool _isLoading = true;
   String? _error;
+  bool _showArabic = false;
 
   @override
   void initState() {
@@ -23,18 +24,99 @@ class _AdhanPageState extends State<AdhanPage> {
   }
 
   Future<void> _getData() async {
+    const slugs = ['adhan-salah', 'adhan'];
     try {
-      final result = await ApiService().getPages('azaan');
+      List<WordpressPost>? found;
+      for (final slug in slugs) {
+        final result = await ApiService().getPages(slug);
+        if (result != null && result.isNotEmpty) {
+          found = result;
+          break;
+        }
+      }
+      if (!mounted) return;
       setState(() {
-        _posts = result ?? [];
+        _posts = found ?? [];
         _isLoading = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _error = e.toString();
         _isLoading = false;
       });
     }
+  }
+
+  String _formatHtml(String rawHtml, bool isDark) {
+    final titleColor = isDark ? '#4ADE80' : '#0E7C3A';
+
+    var html = rawHtml.replaceAll(
+      RegExp(r'<style\b[^>]*>[\s\S]*?</style>', caseSensitive: false),
+      '',
+    );
+
+    html = html.replaceAllMapped(
+      RegExp(
+        r'<strong\b([^>]*)>(.*?)</strong>',
+        caseSensitive: false,
+        dotAll: true,
+      ),
+      (m) => '<strong${m[1]} style="color: $titleColor;">${m[2]}</strong>',
+    );
+    html = html.replaceAllMapped(
+      RegExp(r'<mark\b[^>]*>(.*?)</mark>', caseSensitive: false, dotAll: true),
+      (m) => '<span style="color: $titleColor; font-weight: 700;">${m[1]}</span>',
+    );
+
+    final enTitleRegex = RegExp(
+      r'((?:^|>|<br\s*/?>)\s*)(~?\s*(?:'
+      r'Adhan\s*:?'
+      r'|Only\s+in\s+the\s+Fajr\s+prayer\s*:?'
+      r'|Prayers\s*\(Salutations\)\s+after\s+the\s+Adhan\s*:?'
+      r'|Du[ʿ‘’\x27]?[āa][ʾ’\x27]?(?:\s+after\s+the\s+Adhan)?\s*:?'
+      r'))',
+      caseSensitive: false,
+    );
+
+    html = html.replaceAllMapped(
+      enTitleRegex,
+      (m) =>
+          '${m[1]}<span style="color: $titleColor; font-weight: 700;">${m[2]}</span>',
+    );
+
+    const d = r'[\u064B-\u065F\u0670\u0640]*';
+    final arTitleRegex = RegExp(
+      '((?:^|>|<br\\s*/?>)\\s*)(~?\\s*(?:'
+      'آ${d}ذ${d}ا${d}ن${d}\\s*:?'
+      '|ف${d}ي${d}\\s+ص${d}ل${d}ا${d}ة${d}\\s+ا${d}ل${d}ف${d}ج${d}ر${d}\\s+ف${d}ق${d}ط${d}\\s*:?'
+      '|ص${d}ل${d}و${d}ا${d}ت${d}\\s+ب${d}ع${d}د${d}\\s+ا${d}ل${d}أ${d}ذ${d}ا${d}ن${d}\\s*:?'
+      '|د${d}ع${d}ا${d}ء${d}\\s*:?'
+      '))',
+    );
+
+    html = html.replaceAllMapped(
+      arTitleRegex,
+      (m) =>
+          '${m[1]}<span style="color: $titleColor; font-weight: 700;">${m[2]}</span>',
+    );
+
+    final allahNamesEndRegex = RegExp(
+      r'(\b(?:al-Mutakabbir|al-[\x27\u2018\u2019ʿ]?Al[īi]mu|al-Ba[sṣ][īi]ru|al-Kab[īi]ru|al-Maj[īi]du|al-Mu[ḥh][sṣ][īi]|al-Qayy[ūu]mu|at-Taww[āa]bu|wal-[\x27\u2018\u2019ʿ]?Ikr[āa]m|an-N[ūu]ru|a[sṣ]-[sṣ]ab[ūu]ru)\b\.?\s*\()\uFDFA(\))',
+      caseSensitive: false,
+    );
+    html = html.replaceAllMapped(
+      allahNamesEndRegex,
+      (m) => '${m[1]}\uFDFB${m[2]}',
+    );
+
+    html = html.replaceAllMapped(
+      RegExp(r'([\uFDFA\uFDFB])'),
+      (m) =>
+          '<span style="font-family: \'Neirizi\'; font-size: 20px;">${m[1]}</span>',
+    );
+
+    return html;
   }
 
   @override
@@ -108,7 +190,78 @@ class _AdhanPageState extends State<AdhanPage> {
             ),
           ),
           const Spacer(),
-          const SizedBox(width: 42),
+          GestureDetector(
+            onTap: () => setState(() => _showArabic = !_showArabic),
+            child: Container(
+              padding: const EdgeInsets.all(3),
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.darkSurface : AppColors.lightSurface,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: AppColors.gold.withValues(alpha: 0.6),
+                  width: 1.2,
+                ),
+                boxShadow: isDark
+                    ? AppShadows.cardShadowDark
+                    : AppShadows.cardShadowLight,
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 250),
+                    curve: Curves.easeInOut,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: !_showArabic ? AppColors.gold : Colors.transparent,
+                      borderRadius: BorderRadius.circular(9),
+                    ),
+                    child: Text(
+                      'EN',
+                      style: TextStyle(
+                        fontFamily: 'Nunito',
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: !_showArabic
+                            ? Colors.white
+                            : isDark
+                                ? AppColors.darkSubText
+                                : Colors.black,
+                      ),
+                    ),
+                  ),
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 250),
+                    curve: Curves.easeInOut,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: _showArabic ? AppColors.gold : Colors.transparent,
+                      borderRadius: BorderRadius.circular(9),
+                    ),
+                    child: Text(
+                      'AR',
+                      style: TextStyle(
+                        fontFamily: 'Nunito',
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: _showArabic
+                            ? Colors.white
+                            : isDark
+                                ? AppColors.darkSubText
+                                : Colors.black,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -132,12 +285,15 @@ class _AdhanPageState extends State<AdhanPage> {
   }
 
   Widget _buildContent(WordpressPost post, bool isDark) {
+    final dividerColor = isDark
+        ? Colors.white.withValues(alpha: 0.08)
+        : Colors.black.withValues(alpha: 0.08);
+
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
       decoration: BoxDecoration(
-        //color: isDark ? AppColors.darkSurface : AppColors.lightSurface,
         borderRadius: BorderRadius.circular(AppTheme.cardRadius),
         boxShadow: isDark
             ? AppShadows.cardShadowDark
@@ -147,87 +303,100 @@ class _AdhanPageState extends State<AdhanPage> {
         builder: (context, constraints) => SizedBox(
           width: constraints.maxWidth,
           child: Html(
-            // ─── HTML Pre-Processing ───────────────────────────────────────
-            // WordPress sometimes injects its own <style> blocks inside the
-            // post content that override our app's text colors. We remove
-            // those blocks first so our theme (dark / light) stays in control.
-            //
-            // We also recolor any <strong> text that starts with a number
-            // (e.g.  <strong>1. Niyyah</strong>  or  <strong>3. Ruku</strong>)
-            // so that numbered steps appear in green and are easy to find.
-            //   • Dark  mode → bright green  #4ADE80
-            //   • Light mode → deep  green   #0E7C3A
-            data: post.content
-                .replaceAll(
-                  // Matches the whole <style> ... </style> block and deletes it
-                  RegExp(
-                    r'<style\b[^>]*>[\s\S]*?</style>',
-                    caseSensitive: false,
-                  ),
-                  '',
-                )
-                .replaceAllMapped(
-                  // Matches <strong> whose text begins with a digit, e.g. "1. Step"
-                  RegExp(
-                    r'<strong\b([^>]*)>(\s*\d[^<]*)</strong>',
-                    caseSensitive: false,
-                  ),
-                  // Injects a green inline color so numbered steps stand out
-                  (m) =>
-                      '<strong${m[1]} style="color: ${isDark ? '#4ADE80' : '#0E7C3A'};">${m[2]}</strong>',
-                ),
-            // ──────────────────────────────────────────────────────────────
+            data: _formatHtml(post.content, isDark),
             style: {
               'body': Style(
                 fontFamily: 'Nunito',
-                fontSize: FontSize(15),
+                fontSize: FontSize(16),
                 color: isDark ? AppColors.darkText : AppColors.lightText,
-                lineHeight: LineHeight(1.7),
+                lineHeight: LineHeight(1.75),
                 margin: Margins.zero,
                 padding: HtmlPaddings.zero,
-                textAlign: TextAlign.justify,
               ),
               'p': Style(
                 color: isDark ? AppColors.darkText : AppColors.lightText,
-                fontSize: FontSize(15),
-                margin: Margins.only(bottom: 12),
+                fontSize: FontSize(16),
+                lineHeight: LineHeight(1.75),
+                padding: HtmlPaddings.only(bottom: 14),
+                margin: Margins.only(bottom: 14),
+                border: Border(
+                  bottom: BorderSide(color: dividerColor, width: 0.8),
+                ),
+                display: _showArabic ? Display.none : Display.block,
                 direction: TextDirection.ltr,
-                textAlign: TextAlign.justify,
+                textAlign: TextAlign.left,
               ),
-              'div': Style(
+              'p.arabic-content': Style(
+                fontFamily: 'Neirizi',
+                fontSize: FontSize(19),
+                fontWeight: FontWeight.w500,
+                lineHeight: LineHeight(2.1),
+                direction: TextDirection.rtl,
+                display: _showArabic ? Display.block : Display.none,
+                textAlign: TextAlign.right,
+                padding: HtmlPaddings.only(bottom: 16),
+                margin: Margins.only(bottom: 16),
+                border: Border(
+                  bottom: BorderSide(color: dividerColor, width: 0.8),
+                ),
+                color: isDark ? AppColors.darkText : AppColors.lightText,
+              ),
+              '*[lang="ar"]': Style(
+                fontFamily: 'Neirizi',
+                fontSize: FontSize(19),
+                fontWeight: FontWeight.w500,
+                lineHeight: LineHeight(2.1),
+                direction: TextDirection.rtl,
+                display: _showArabic ? Display.block : Display.none,
+                textAlign: TextAlign.right,
+                padding: HtmlPaddings.only(bottom: 16),
+                margin: Margins.only(bottom: 16),
+                border: Border(
+                  bottom: BorderSide(color: dividerColor, width: 0.8),
+                ),
                 color: isDark ? AppColors.darkText : AppColors.lightText,
               ),
               'p.has-large-font-size': Style(
                 fontFamily: 'Neirizi',
-                fontSize: FontSize(25),
-                fontWeight: FontWeight(700),
-                lineHeight: LineHeight(2.0),
+                fontSize: FontSize(19),
+                fontWeight: FontWeight.w500,
+                lineHeight: LineHeight(2.1),
                 direction: TextDirection.rtl,
+                display: _showArabic ? Display.block : Display.none,
                 textAlign: TextAlign.right,
+                padding: HtmlPaddings.only(bottom: 16),
+                margin: Margins.only(bottom: 16),
+                border: Border(
+                  bottom: BorderSide(color: dividerColor, width: 0.8),
+                ),
+                color: isDark ? AppColors.darkText : AppColors.lightText,
+              ),
+              'div': Style(
                 color: isDark ? AppColors.darkText : AppColors.lightText,
               ),
               'h1': Style(
                 fontFamily: 'Poppins',
                 color: AppColors.gold,
-                fontSize: FontSize(26),
+                fontSize: FontSize(24),
                 fontWeight: FontWeight.w700,
+                margin: Margins.only(bottom: 16),
               ),
               'h2': Style(
                 fontFamily: 'Poppins',
                 color: AppColors.gold,
-                fontSize: FontSize(22),
+                fontSize: FontSize(21),
                 fontWeight: FontWeight.w700,
               ),
               'h3': Style(
                 fontFamily: 'Poppins',
                 color: AppColors.gold,
-                fontSize: FontSize(20),
+                fontSize: FontSize(19),
                 fontWeight: FontWeight.w700,
               ),
               'h4': Style(
                 fontFamily: 'Poppins',
                 color: AppColors.gold,
-                fontSize: FontSize(18),
+                fontSize: FontSize(17),
                 fontWeight: FontWeight.w700,
               ),
               'img': Style(

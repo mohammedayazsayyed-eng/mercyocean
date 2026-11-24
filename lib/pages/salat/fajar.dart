@@ -43,13 +43,11 @@ class _FajarPageState extends State<FajarPage> {
   String _formatHtml(String rawHtml, bool isDark) {
     final titleColor = isDark ? '#4ADE80' : '#0E7C3A';
 
-    // 1. Strip injected WordPress <style> blocks
     var html = rawHtml.replaceAll(
       RegExp(r'<style\b[^>]*>[\s\S]*?</style>', caseSensitive: false),
       '',
     );
 
-    // 2. Color existing <strong> titles & <mark> notes
     html = html.replaceAllMapped(
       RegExp(
         r'<strong\b([^>]*)>(.*?)</strong>',
@@ -63,14 +61,14 @@ class _FajarPageState extends State<FajarPage> {
       (m) => '<span style="color: $titleColor; font-weight: 700;">${m[1]}</span>',
     );
 
-    // 3. Highlight English titles at the start of a paragraph or after <br>
     final enTitleRegex = RegExp(
       r'((?:^|>|<br\s*/?>)\s*)(~?\s*(?:'
-      r'[ṢS]al[āa]tu\s+(?:as-Sunnah|l-far[ḍd]|al-Munjiyah(?:/Tunj[īi]n[āa])?)(?:\s*\([^)]*\))?'
+      r'[ṢS]al[āa]tu\s+(?:al-Fajr|as-Sunnah|l-far[ḍd]|al-Munjiyah(?:/Tunj[īi]n[āa])?)(?:\s*\([^)]*\))?'
       r'|Kalimat\s+ash-Shah[āa]dah\s*:?'
-      r'|Du[ʿ‘’\x27]?[āa][ʾ’\x27]?(?:\s+al-Qun[ūu]t\.?|\s+recited\s+by\s+the\s+imam)?\s*:?'
+      r'|Du[ʿ‘’\x27]?[āa][ʾ’\x27]?(?:\s+al-Qun[ūu]t\.?|\s+after\s+the\s+Adhan|\s+recited\s+by\s+the\s+imam)?\s*:?'
       r'|Ihd[āa][’\x27]?\s*:?'
-      r'|Iqamat\s+as-Salah\.?'
+      r'|Adhan\s*:?'
+      r'|Iqamat\s+a[sṣ]-[sṣ]al[āa]h\.?'
       r'|Tasb[īi][ḥh]\s*:?'
       r'|Al-Istighf[āa]r\s*:?'
       r'|[ṢS]alaw[āa]t(?:\s*\([^)]*\))?'
@@ -90,11 +88,11 @@ class _FajarPageState extends State<FajarPage> {
           '${m[1]}<span style="color: $titleColor; font-weight: 700;">${m[2]}</span>',
     );
 
-    // 4. Highlight Arabic titles (handles optional tashkeel/harakat between letters)
     const d = r'[\u064B-\u065F\u0670\u0640]*';
     final arTitleRegex = RegExp(
       '((?:^|>|<br\\s*/?>)\\s*)(~?\\s*(?:'
-      'ص${d}ل${d}ا${d}ة${d}\\s+ا${d}ل${d}س${d}ن${d}ة${d}(?:\\s*\\([^)]*\\))?'
+      'ص${d}ل${d}ا${d}ة${d}\\s+ا${d}ل${d}ف${d}ج${d}ر${d}(?:\\s*\\([^)]*\\))?'
+      '|ص${d}ل${d}ا${d}ة${d}\\s+ا${d}ل${d}س${d}ن${d}ة${d}(?:\\s*\\([^)]*\\))?'
       '|ص${d}ل${d}ا${d}ة${d}\\s+ا${d}ل${d}ف${d}ر${d}ض${d}(?:\\s*\\([^)]*\\))?'
       '|ص${d}ل${d}ا${d}ة${d}\\s+ا${d}ل${d}م${d}ن${d}ج${d}ي${d}ة${d}'
       '|ك${d}ل${d}م${d}ة${d}\\s+ا${d}ل${d}ش${d}ه${d}ا${d}د${d}ة${d}\\s*:?'
@@ -103,7 +101,6 @@ class _FajarPageState extends State<FajarPage> {
       '|إ${d}ه${d}د${d}ا${d}ء${d}\\s*:?'
       '|ا${d}ه${d}د${d}ا${d}ء${d}\\s*:?'
       '|إ${d}ق${d}ا${d}م${d}ة${d}\\s+ا${d}ل${d}ص${d}ل${d}ا${d}ة${d}'
-      '|ا${d}ق${d}ا${d}م${d}ة${d}\\s+ا${d}ل${d}ص${d}ل${d}ا${d}ة${d}'
       '|ا${d}ل${d}ت${d}س${d}ب${d}ي${d}ح${d}\\s*:?'
       '|ت${d}س${d}ب${d}ي${d}ح${d}\\s*:?'
       '|ا${d}ل${d}ا${d}س${d}ت${d}غ${d}ف${d}ا${d}ر${d}\\s*:?'
@@ -119,9 +116,9 @@ class _FajarPageState extends State<FajarPage> {
           '${m[1]}<span style="color: $titleColor; font-weight: 700;">${m[2]}</span>',
     );
 
-    // 5. Render (ﷻ) and (ﷺ) cleanly inline inside English text using Neirizi
+    html = html.replaceAll('\uFDFA', '\uFDFB');
     html = html.replaceAllMapped(
-      RegExp(r'([\uFDFA\uFDFB])'),
+      RegExp(r'(\uFDFB)'),
       (m) =>
           '<span style="font-family: \'Neirizi\'; font-size: 20px;">${m[1]}</span>',
     );
