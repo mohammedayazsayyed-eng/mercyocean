@@ -11,6 +11,7 @@ import '../service/audio_speed.dart';
 import '../service/quran_audio_service.dart';
 import '../service/qari_clip_cache.dart';
 import '../service/reciter.dart';
+import '../service/surah_names.dart';
 
 class SurahListReaderScreen extends StatefulWidget {
   final int initialSurah;
@@ -361,14 +362,31 @@ class _SurahListReaderScreenState extends State<SurahListReaderScreen> {
                 int surahNum = index + 1;
                 return DropdownMenuItem(
                   value: surahNum,
-                  child: Text(
-                    '$surahNum. ${getSurahNameEnglish(surahNum)} ${getSurahNameArabic(surahNum)}',
-                    style: TextStyle(
-                      color: primaryColor,
-                      fontWeight: FontWeight.w500,
-                      fontFamily: 'Neirizi',
-                      fontSize: 18,
-                    ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          '$surahNum. ${surahRoman(surahNum)}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: primaryColor,
+                            fontWeight: FontWeight.w500,
+                            fontFamily: 'Poppins',
+                            fontSize: 15,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        getSurahNameArabic(surahNum),
+                        style: TextStyle(
+                          color: primaryColor,
+                          fontFamily: 'Neirizi',
+                          fontSize: 18,
+                        ),
+                      ),
+                    ],
                   ),
                 );
               }),
@@ -561,7 +579,7 @@ class _SurahListReaderScreenState extends State<SurahListReaderScreen> {
                                       softWrap: true,
                                       text: TextSpan(
                                         style: TextStyle(
-                                          fontFamily: 'IndoPak',
+                                          fontFamily: 'IndoPakNew',
                                           fontSize: 24,
                                           height: 2.0,
                                           color: Theme.of(
