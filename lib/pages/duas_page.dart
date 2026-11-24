@@ -147,7 +147,7 @@ class _DuasPageState extends State<DuasPage> {
                   const SizedBox(height: 24),
                   ElevatedButton(
                     onPressed: () => setState(() {
-                      _duaListFuture = _apiService.getAllDuas();
+                      _duaListFuture = _apiService.getRabbanaDua('app-rabbana-duas');
                     }),
                     child: const Text('Try Again'),
                   ),

@@ -41,12 +41,12 @@ class _JuzReaderScreenState extends State<JuzReaderScreen> {
   bool _isPlaying = false;
   int _playingSurah = 0;
   int _playingAyah = 0;
+  int _playSessionId = 0;
 
   // --- Qari Abdur Rahman Naqshbandi (one MP3 per juz, played by position) ---
   final QuranAudioService _qari = QuranAudioService();
   StreamSubscription<AyahTiming?>? _qariAyahSub;
   StreamSubscription<PlayerState>? _qariStateSub;
-  DateTime _ignoreQariUntil = DateTime.fromMillisecondsSinceEpoch(0);
   bool _qariLive = false; // the juz recording has taken over from the clip
   AyahTiming? _handoverTo;
 
@@ -194,27 +194,33 @@ class _JuzReaderScreenState extends State<JuzReaderScreen> {
       ];
     });
   }
+
   // Debug messages are switched off; set to true to see handover details.
   static const bool _showDebug = false;
   void _debugNote(String m) {
     if (!_showDebug || !mounted) return;
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      duration: const Duration(milliseconds: 1500),
-      content: Text(m),
-    ));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        duration: const Duration(milliseconds: 1500),
+        content: Text(m),
+      ),
+    );
   }
 
   // Qari: while this clip plays, load the juz recording at the NEXT ayah so it
   // can take over the moment the clip ends (continuous recitation).
-  Future<void> _prepareHandover(int surah, int ayah) async {
+  Future<void> _prepareHandover(int surah, int ayah, int sessionId) async {
     try {
       await _qari.init();
+      if (!mounted || sessionId != _playSessionId || !_isPlaying) return;
       final next = _qari.nextAfter(surah, ayah);
       _handoverTo = next;
       if (next != null) _qari.prepareAt(next.surah, next.ayah);
     } catch (_) {
-      _handoverTo = null;
+      if (sessionId == _playSessionId) {
+        _handoverTo = null;
+      }
     }
   }
 
@@ -239,6 +245,7 @@ class _JuzReaderScreenState extends State<JuzReaderScreen> {
   }
 
   void _applySpeed() => _audioPlayer.setSpeed(audioSpeedNotifier.value);
+
   Future<void> _togglePlay(int surah, int ayah) async {
     if (_isPlaying && _playingSurah == surah && _playingAyah == ayah) {
       await _stopPlay();
@@ -248,6 +255,7 @@ class _JuzReaderScreenState extends State<JuzReaderScreen> {
   }
 
   Future<void> _playAyah(int surah, int ayah) async {
+    final sessionId = ++_playSessionId;
     _playingSurah = surah;
     _playingAyah = ayah;
     setState(() => _isPlaying = true);
@@ -258,25 +266,33 @@ class _JuzReaderScreenState extends State<JuzReaderScreen> {
       _handoverTo = null;
       _qari.cancelPrepared();
       await _qari.player.pause();
-            // Qari, ayah 1 of a short surah: play straight from the juz recording
+      if (!mounted || sessionId != _playSessionId || !_isPlaying) return;
+
+      // Qari, ayah 1 of a short surah: play straight from the juz recording
       if (reciterNotifier.value == Reciter.naqshbandi &&
           ayah == 1 &&
           getVerseCount(surah) <= 60) {
         await _audioPlayer.stop();
+        if (!mounted || sessionId != _playSessionId || !_isPlaying) return;
         _qariLive = false;
         await _qari.playAyah(surah, ayah);
-        if (!mounted || !_isPlaying) return;
+        if (!mounted || sessionId != _playSessionId || !_isPlaying) return;
         _qariLive = true;
         return;
       }
+
       await _setAyahSource(surah, ayah);
+      if (!mounted || sessionId != _playSessionId || !_isPlaying) return;
+
       await _audioPlayer.setSpeed(audioSpeedNotifier.value);
       if (reciterNotifier.value == Reciter.naqshbandi) {
-        await _prepareHandover(surah, ayah);
+        await _prepareHandover(surah, ayah, sessionId);
+        if (!mounted || sessionId != _playSessionId || !_isPlaying) return;
       }
+
       await _audioPlayer.play();
     } catch (e) {
-      if (mounted) {
+      if (mounted && sessionId == _playSessionId) {
         setState(() => _isPlaying = false);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Unable to play ayah audio')),
@@ -290,6 +306,8 @@ class _JuzReaderScreenState extends State<JuzReaderScreen> {
   Future<void> _onAyahAudioCompleted() async {
     if (!mounted || !_isPlaying) return;
     if (_qariLive) return; // the juz recording is in control now
+    final sessionId = _playSessionId;
+
     if (reciterNotifier.value == Reciter.naqshbandi) {
       if (_handoverTo == null) {
         _debugNote('handover: no target');
@@ -297,9 +315,12 @@ class _JuzReaderScreenState extends State<JuzReaderScreen> {
         final next = _handoverTo!;
         final sw = Stopwatch()..start();
         final ok = await _qari.playPrepared();
-        _debugNote(ok
-            ? 'handover OK: juz recording took over (${sw.elapsedMilliseconds} ms)'
-            : 'handover FAILED (${sw.elapsedMilliseconds} ms): ${_qari.lastPrepError ?? "not ready in time"}');
+        if (!mounted || sessionId != _playSessionId || !_isPlaying) return;
+        _debugNote(
+          ok
+              ? 'handover OK: juz recording took over (\${sw.elapsedMilliseconds} ms)'
+              : 'handover FAILED (${sw.elapsedMilliseconds} ms):${_qari.lastPrepError ?? "not ready in time"}',
+        );
         if (ok) {
           _qariLive = true;
           _handoverTo = null;
@@ -322,7 +343,7 @@ class _JuzReaderScreenState extends State<JuzReaderScreen> {
       final nextSeg = _segments[nextIndex];
       _openSegment(nextIndex);
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted && _isPlaying) {
+        if (mounted && _isPlaying && sessionId == _playSessionId) {
           _playAyah(nextSeg.surah, nextSeg.startAyah);
         }
       });
@@ -356,16 +377,15 @@ class _JuzReaderScreenState extends State<JuzReaderScreen> {
     if (t == null || !mounted || !_isPlaying) return;
     if (reciterNotifier.value != Reciter.naqshbandi) return;
     if (!_qariLive) return;
-    if (DateTime.now().isBefore(_ignoreQariUntil)) return;
     if (t.surah == _playingSurah && t.ayah == _playingAyah) return;
 
+    final sessionId = _playSessionId;
     _playingSurah = t.surah;
     _playingAyah = t.ayah;
 
     final seg = _segment;
-    final inside = t.surah == seg.surah &&
-        t.ayah >= seg.startAyah &&
-        t.ayah <= seg.endAyah;
+    final inside =
+        t.surah == seg.surah && t.ayah >= seg.startAyah && t.ayah <= seg.endAyah;
     if (inside) {
       _highlightAyah(t.surah, t.ayah);
       return;
@@ -379,20 +399,22 @@ class _JuzReaderScreenState extends State<JuzReaderScreen> {
       _openSegment(loc.seg);
     }
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted && _isPlaying) _highlightAyah(t.surah, t.ayah);
+      if (mounted && _isPlaying && sessionId == _playSessionId) {
+        _highlightAyah(t.surah, t.ayah);
+      }
     });
   }
 
   Future<void> _stopPlay() async {
+    final sessionId = ++_playSessionId;
     _isPlaying = false; // first, so no player event can start another ayah
     _qariLive = false;
     _handoverTo = null;
     _qari.cancelPrepared();
     await _qari.player.stop();
     await _audioPlayer.stop();
-    if (!mounted) return;
+    if (!mounted || sessionId != _playSessionId) return;
     setState(() {
-      _isPlaying = false;
       _playingSurah = 0;
       _playingAyah = 0;
       _highlights = [];
@@ -402,7 +424,7 @@ class _JuzReaderScreenState extends State<JuzReaderScreen> {
   Future<void> _copyAyah(int surahNumber, int verseNumber) async {
     String text = getVerse(surahNumber, verseNumber, verseEndSymbol: true);
     text +=
-        '\n\nSurah ${getSurahNameEnglish(surahNumber)} ($surahNumber:$verseNumber)';
+        '\n\nSurah \${getSurahNameEnglish(surahNumber)} ($surahNumber:$verseNumber)';
     text += '\n\nMercy Ocean App\nNaqshbandi Sufi Order';
     await Clipboard.setData(ClipboardData(text: text));
     if (mounted) {
@@ -418,13 +440,14 @@ class _JuzReaderScreenState extends State<JuzReaderScreen> {
     await SharePlus.instance.share(
       ShareParams(
         text:
-            '$text\n\nSurah $surahName ($surahNumber:$verseNumber)\n\nMercy Ocean App\nNaqshbandi Sufi Order',
+            '$text\n\nSurah$surahName ($surahNumber:$verseNumber)\n\nMercy Ocean App\nNaqshbandi Sufi Order',
       ),
     );
   }
 
   @override
   void dispose() {
+    _playSessionId++;
     _playerStateSubscription?.cancel();
     _qariAyahSub?.cancel();
     _qariStateSub?.cancel();
@@ -459,7 +482,7 @@ class _JuzReaderScreenState extends State<JuzReaderScreen> {
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
                   child: Text(
-                    'Surahs in Juz $_juz',
+                    'Surahs in Juz \$_juz',
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontFamily: 'Poppins',
@@ -483,7 +506,7 @@ class _JuzReaderScreenState extends State<JuzReaderScreen> {
                           radius: 16,
                           backgroundColor: primaryColor.withValues(alpha: 0.12),
                           child: Text(
-                            '${s.surah}',
+                            '\${s.surah}',
                             style: TextStyle(
                               fontSize: 12,
                               color: primaryColor,
@@ -497,8 +520,8 @@ class _JuzReaderScreenState extends State<JuzReaderScreen> {
                         ),
                         subtitle: Text(
                           s.isFullSurah
-                              ? 'Full surah (${s.endAyah} ayahs)'
-                              : 'Ayah ${s.startAyah} to ${s.endAyah}',
+                              ? 'Full surah (\${s.endAyah} ayahs)'
+                              : 'Ayah ${s.startAyah} to${s.endAyah}',
                           style: const TextStyle(
                             fontFamily: 'Poppins',
                             fontSize: 12,
@@ -547,7 +570,7 @@ class _JuzReaderScreenState extends State<JuzReaderScreen> {
                 label: Text(
                   _segments[i].isFullSurah
                       ? getSurahNameEnglish(_segments[i].surah)
-                      : '${getSurahNameEnglish(_segments[i].surah)} '
+                      : '\${getSurahNameEnglish(_segments[i].surah)} '
                             '${_segments[i].startAyah}-${_segments[i].endAyah}',
                   style: TextStyle(
                     fontFamily: 'Poppins',
@@ -588,7 +611,7 @@ class _JuzReaderScreenState extends State<JuzReaderScreen> {
               return DropdownMenuItem(
                 value: juzNo,
                 child: Text(
-                  'Juz $juzNo',
+                  'Juz \$juzNo',
                   style: TextStyle(
                     color: primaryColor,
                     fontWeight: FontWeight.w500,
@@ -707,7 +730,7 @@ class _JuzReaderScreenState extends State<JuzReaderScreen> {
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                     child: Text(
-                                      'آية $verseNumber',
+                                      ' \$verseNumber',
                                       style: TextStyle(
                                         fontWeight: FontWeight.bold,
                                         color: primaryColor,
@@ -777,8 +800,8 @@ class _JuzReaderScreenState extends State<JuzReaderScreen> {
                       if (!hasNextSegment && !hasNextJuz) return card;
 
                       final String nextLabel = hasNextSegment
-                          ? 'Next: ${getSurahNameEnglish(_segments[_segmentIndex + 1].surah)}'
-                          : 'Next: Juz ${_juz + 1}';
+                          ? 'Next: \${getSurahNameEnglish(_segments[_segmentIndex + 1].surah)}'
+                          : 'Next: Juz \${_juz + 1}';
 
                       return Column(
                         children: [

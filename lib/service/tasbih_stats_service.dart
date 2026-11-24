@@ -22,7 +22,8 @@ class TasbihStats {
 class TasbihStatsService {
   static const String _key = 'tasbih_daily_taps';
 
-  /// Keep in step with `kRoundTarget` in tasbih_page.dart.
+  /// Default fallback if no roundSize is passed; pass `kRoundTarget` from
+  /// `tasbih_page.dart` so both stay in sync.
   static const int _roundSize = 100;
 
   static Future<Map<String, int>> _readAll() async {
@@ -51,19 +52,22 @@ class TasbihStatsService {
       '${date.day.toString().padLeft(2, '0')}';
 
   /// Records one tap for today and returns the refreshed stats snapshot.
-  static Future<TasbihStats> recordTap() async {
+  static Future<TasbihStats> recordTap({int roundSize = _roundSize}) async {
     final data = await _readAll();
     final todayKey = _keyFor(DateTime.now());
     data[todayKey] = (data[todayKey] ?? 0) + 1;
     await _writeAll(data);
-    return _computeStats(data);
+    return _computeStats(data, roundSize: roundSize);
   }
 
-  static Future<TasbihStats> getStats() async {
-    return _computeStats(await _readAll());
+  static Future<TasbihStats> getStats({int roundSize = _roundSize}) async {
+    return _computeStats(await _readAll(), roundSize: roundSize);
   }
 
-  static TasbihStats _computeStats(Map<String, int> data) {
+  static TasbihStats _computeStats(
+    Map<String, int> data, {
+    int roundSize = _roundSize,
+  }) {
     final todayKey = _keyFor(DateTime.now());
     final todayCount = data[todayKey] ?? 0;
 
@@ -88,7 +92,7 @@ class TasbihStatsService {
 
     return TasbihStats(
       today: todayCount,
-      rounds: todayCount ~/ _roundSize,
+      rounds: todayCount ~/ roundSize,
       bestStreak: bestStreak,
     );
   }

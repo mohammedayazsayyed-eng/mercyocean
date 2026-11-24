@@ -118,7 +118,7 @@ class _TasbihPageState extends State<TasbihPage> {
   }
 
   Future<void> _loadStats() async {
-    final stats = await TasbihStatsService.getStats();
+    final stats = await TasbihStatsService.getStats(roundSize: kRoundTarget);
     if (!mounted) return;
     setState(() {
       _todayCount = stats.today;
@@ -139,7 +139,7 @@ class _TasbihPageState extends State<TasbihPage> {
     });
     // Persisted in the background — daily activity tracking doesn't need
     // to block the tap feedback.
-    TasbihStatsService.recordTap().then((stats) {
+    TasbihStatsService.recordTap(roundSize: kRoundTarget).then((stats) {
       if (!mounted) return;
       setState(() => _bestStreak = stats.bestStreak);
     });

@@ -3,7 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:mercyocean/pages/Contact.dart';
 import 'package:mercyocean/pages/ShaykhMehmat.dart';
 import 'package:mercyocean/pages/intro_page.dart';
-import 'package:mercyocean/pages/Shaykhnazim.dart';
+import 'package:mercyocean/pages/ShaykhNazim.dart';
 import 'package:mercyocean/widgets/bottom_nav_bar.dart';
 import 'package:mercyocean/widgets/tasbih_floating_button.dart';
 import 'package:qcf_quran_plus/qcf_quran_plus.dart';

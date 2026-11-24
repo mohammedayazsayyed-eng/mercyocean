@@ -526,8 +526,6 @@ class ApiService {
 
   Future<List<Dua>> getAllDuas() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('all_duas');
-    await prefs.remove('all_duas_time'); //temporary
     try {
       const cacheKey = 'all_duas';
 
