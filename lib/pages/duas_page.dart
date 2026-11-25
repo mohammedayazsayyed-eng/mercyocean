@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../service/api_service.dart';
 import '../models/dua_model.dart';
 import '../config/app_theme.dart';
+import 'mawlana_shaykh_nazim_dua_page.dart';
 
 class DuasPage extends StatefulWidget {
   const DuasPage({super.key});
@@ -43,7 +44,7 @@ class _DuasPageState extends State<DuasPage> {
     );
   }
 
-  // ── App Bar ─────────────────────────────────────────────────
+  // App Bar
   Widget _buildAppBar(BuildContext context, bool isDark) {
     return Container(
       decoration: BoxDecoration(
@@ -98,7 +99,7 @@ class _DuasPageState extends State<DuasPage> {
     );
   }
 
-  // ── Body ─────────────────────────────────────────────────────
+  // Body
   Widget _buildBody(BuildContext context, bool isDark) {
     return FutureBuilder<List<Dua>?>(
       future: _duaListFuture,
@@ -181,7 +182,6 @@ class _DuasPageState extends State<DuasPage> {
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-
                   const SizedBox(height: 8),
                   Text(
                     'Check back later for more duas',
@@ -202,16 +202,104 @@ class _DuasPageState extends State<DuasPage> {
 
         return ListView.builder(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          itemCount: duas.length,
+          itemCount: duas.length + 1,
           itemBuilder: (context, index) {
-            return _buildDuaCard(context, isDark, duas[index], index);
+            if (index == 0) {
+              return _buildFeaturedMawlanaDuaCard(context, isDark);
+            }
+            return _buildDuaCard(context, isDark, duas[index - 1], index - 1);
           },
         );
       },
     );
   }
 
-  // ── Dua Card ────────────────────────────────────────────────
+  // Featured Mawlana Shaykh Nazim Dua Card
+  Widget _buildFeaturedMawlanaDuaCard(BuildContext context, bool isDark) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => const MawlanaShaykhNazimDuaPage(),
+          ),
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 14),
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.darkSurface : AppColors.lightSurface,
+          borderRadius: BorderRadius.circular(AppTheme.cardRadius),
+          border: Border.all(
+            color: AppColors.gold.withValues(alpha: 0.6),
+            width: 1.4,
+          ),
+          boxShadow: isDark
+              ? AppShadows.cardShadowDark
+              : AppShadows.cardShadowLight,
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Row(
+            children: [
+              Container(
+                width: 46,
+                height: 46,
+                decoration: BoxDecoration(
+                  gradient: AppGradients.goldShimmer,
+                  shape: BoxShape.circle,
+                ),
+                child: const Center(
+                  child: Icon(
+                    Icons.play_arrow_rounded,
+                    color: Colors.white,
+                    size: 26,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Mawlana Shaykh Nazim Dua',
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: isDark
+                            ? AppColors.darkText
+                            : AppColors.lightText,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Grand Supplication • Listen & Read',
+                      style: TextStyle(
+                        fontFamily: 'Nunito',
+                        fontSize: 12,
+                        color: AppColors.gold,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              Icon(
+                Icons.arrow_forward_ios_rounded,
+                size: 16,
+                color: AppColors.gold,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Dua Card
   Widget _buildDuaCard(BuildContext context, bool isDark, Dua dua, int index) {
     final gradientIndex = index % AppColors.lightCardGradients.length;
 
@@ -241,7 +329,7 @@ class _DuasPageState extends State<DuasPage> {
           padding: const EdgeInsets.all(14),
           child: Row(
             children: [
-              // ── Number circle ────────────────────
+              // Number circle
               Container(
                 width: 46,
                 height: 46,
@@ -272,12 +360,11 @@ class _DuasPageState extends State<DuasPage> {
 
               const SizedBox(width: 14),
 
-              // ── Dua details ─────────────────────
+              // Dua details
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Title
                     Text(
                       dua.title ?? 'Dua',
                       style: TextStyle(
@@ -292,7 +379,6 @@ class _DuasPageState extends State<DuasPage> {
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 4),
-                    // Category + Occasion
                     Text(
                       '${dua.category ?? 'General'} • ${dua.occasion ?? 'Anytime'}',
                       style: TextStyle(
@@ -306,26 +392,13 @@ class _DuasPageState extends State<DuasPage> {
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 6),
-                    // Arabic dua preview
-                    // if (dua.duaText != null)
-                    //   Text(
-                    //     dua.duaText!,
-                    //     style: const TextStyle(
-                    //       fontFamily: 'alKitab',
-                    //       fontSize: 14,
-                    //       // height: 1.6,
-                    //     ),
-                    //     maxLines: 2,
-                    //     overflow: TextOverflow.ellipsis,
-                    //     textAlign: TextAlign.right,
-                    //   ),
                   ],
                 ),
               ),
 
               const SizedBox(width: 12),
 
-              // ── Arrow icon ──────────────────────
+              // Arrow icon
               Icon(
                 Icons.arrow_forward_ios_rounded,
                 size: 16,
@@ -338,7 +411,7 @@ class _DuasPageState extends State<DuasPage> {
     );
   }
 
-  // ── Dua Detail Sheet ────────────────────────────────────────
+  // Dua Detail Sheet
   Widget _buildDuaDetailSheet(BuildContext context, bool isDark, Dua dua) {
     return DraggableScrollableSheet(
       expand: false,
@@ -353,7 +426,6 @@ class _DuasPageState extends State<DuasPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // ── Header ──────────────────────
                 Center(
                   child: Container(
                     width: 40,
@@ -367,7 +439,6 @@ class _DuasPageState extends State<DuasPage> {
 
                 const SizedBox(height: 24),
 
-                // ── Title ───────────────────────
                 Text(
                   dua.title ?? 'Dua',
                   style: const TextStyle(
@@ -380,7 +451,6 @@ class _DuasPageState extends State<DuasPage> {
 
                 const SizedBox(height: 8),
 
-                // ── Metadata ────────────────────
                 Row(
                   children: [
                     Container(
@@ -427,7 +497,6 @@ class _DuasPageState extends State<DuasPage> {
 
                 const SizedBox(height: 20),
 
-                // ── Description ─────────────────
                 if (dua.description != null && dua.description!.isNotEmpty)
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -459,7 +528,6 @@ class _DuasPageState extends State<DuasPage> {
                     ],
                   ),
 
-                // ── Arabic Dua ──────────────────
                 if (dua.duaText != null && dua.duaText!.isNotEmpty)
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -505,7 +573,6 @@ class _DuasPageState extends State<DuasPage> {
                     ],
                   ),
 
-                // ── Transliteration ─────────────────
                 if (dua.transliteration != null &&
                     dua.transliteration!.isNotEmpty)
                   Column(
@@ -552,7 +619,6 @@ class _DuasPageState extends State<DuasPage> {
                     ],
                   ),
 
-                // ── Translation ─────────────────
                 if (dua.duaTranslation != null &&
                     dua.duaTranslation!.isNotEmpty)
                   Column(
