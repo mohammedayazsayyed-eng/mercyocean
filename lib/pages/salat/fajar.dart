@@ -48,6 +48,15 @@ class _FajarPageState extends State<FajarPage> {
       '',
     );
 
+    // Unwrap accidental double <p><p ...>...</p></p> from WordPress
+    html = html.replaceAllMapped(
+      RegExp(
+        r'<p>\s*(<p\b[^>]*>[\s\S]*?</p>)\s*</p>',
+        caseSensitive: false,
+      ),
+      (m) => m[1]!,
+    );
+
     html = html.replaceAllMapped(
       RegExp(
         r'<strong\b([^>]*)>(.*?)</strong>',
@@ -107,6 +116,9 @@ class _FajarPageState extends State<FajarPage> {
       '|ص${d}ل${d}و${d}ا${d}ت${d}(?:\\s*\\([^)]*\\))?'
       '|س${d}و${d}ر${d}ة${d}\\s+[^<:.\\n(]+(?:\\s*\\([^)]*\\))?\\s*:?'
       '|ا${d}ل${d}ف${d}ا${d}ت${d}ح${d}ة${d}(?:\\s*\\([^)]*\\))?'
+      '|ي${d}و${d}ا${d}ص${d}ل${d}\\s+ا${d}ل${d}إ${d}م${d}ا${d}م${d}[^:<]*:?'
+      '|ا${d}ض${d}ط${d}ج${d}ع${d}[^:<]*:?'
+      '|ا${d}ن${d}ه${d}ض${d}[^:<]*:?'
       '))',
     );
 
@@ -116,9 +128,9 @@ class _FajarPageState extends State<FajarPage> {
           '${m[1]}<span style="color: $titleColor; font-weight: 700;">${m[2]}</span>',
     );
 
-    html = html.replaceAll('\uFDFA', '\uFDFB');
+    // Style both ﷺ (\uFDFA) and ﷻ (\uFDFB) without swapping them
     html = html.replaceAllMapped(
-      RegExp(r'(\uFDFB)'),
+      RegExp(r'([\uFDFA\uFDFB])'),
       (m) =>
           '<span style="font-family: \'Neirizi\'; font-size: 20px;">${m[1]}</span>',
     );
