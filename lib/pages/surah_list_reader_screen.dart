@@ -6,7 +6,6 @@ import 'package:just_audio/just_audio.dart';
 import 'package:qcf_quran_plus/qcf_quran_plus.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import 'package:share_plus/share_plus.dart';
-import '../main.dart';
 import '../service/audio_speed.dart';
 import '../service/quran_audio_service.dart';
 import '../service/qari_clip_cache.dart';

@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:mercyocean/service/mushaf_bookmark_service.dart';
-import '../main.dart';
 import 'package:qcf_quran_plus/qcf_quran_plus.dart';
 import '../service/surah_names.dart';
 

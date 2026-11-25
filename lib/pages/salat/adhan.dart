@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_html/flutter_html.dart';
 import 'package:mercyocean/models/wordpress_post_model.dart';
 import 'package:mercyocean/service/api_service.dart';
@@ -88,10 +88,10 @@ class _AdhanPageState extends State<AdhanPage> {
     const d = r'[\u064B-\u065F\u0670\u0640]*';
     final arTitleRegex = RegExp(
       '((?:^|>|<br\\s*/?>)\\s*)(~?\\s*(?:'
-      'آ${d}ذ${d}ا${d}ن${d}\\s*:?'
-      '|ف${d}ي${d}\\s+ص${d}ل${d}ا${d}ة${d}\\s+ا${d}ل${d}ف${d}ج${d}ر${d}\\s+ف${d}ق${d}ط${d}\\s*:?'
-      '|ص${d}ل${d}و${d}ا${d}ت${d}\\s+ب${d}ع${d}د${d}\\s+ا${d}ل${d}أ${d}ذ${d}ا${d}ن${d}\\s*:?'
-      '|د${d}ع${d}ا${d}ء${d}\\s*:?'
+      'آ$dذ$dا$dن$d\\s*:?'
+      '|ف$dي$d\\s+ص$dل$dا$dة$d\\s+ا$dل$dف$dج$dر$d\\s+ف$dق$dط$d\\s*:?'
+      '|ص$dل$dو$dا$dت$d\\s+ب$dع$dد$d\\s+ا$dل$dأ$dذ$dا$dن$d\\s*:?'
+      '|د$dع$dا$dء$d\\s*:?'
       '))',
     );
 

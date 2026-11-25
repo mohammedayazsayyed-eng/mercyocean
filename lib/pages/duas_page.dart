@@ -221,7 +221,7 @@ class _DuasPageState extends State<DuasPage> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => const MawlanaShaykhNazimDuaPage(),
+            builder: (_) => MawlanaShaykhNazimDuaPage(),
           ),
         );
       },
@@ -263,7 +263,7 @@ class _DuasPageState extends State<DuasPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Mawlana Shaykh Nazim Dua',
+                      'Dua by Grandshaykh, Shaykh Nazim QSA',
                       style: TextStyle(
                         fontFamily: 'Poppins',
                         fontSize: 15,
