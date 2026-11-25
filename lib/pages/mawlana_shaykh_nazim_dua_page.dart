@@ -53,14 +53,14 @@ class _MawlanaShaykhNazimDuaPageState extends State<MawlanaShaykhNazimDuaPage> {
  double _playbackSpeed = 1.0;
 
  Future<void> _setPlaybackSpeed(double speed) async {
-  await _audioPlayer.setSpeed(speed);
-  if (mounted) {
-   setState(() => _playbackSpeed = speed);
-  }
+ await _audioPlayer.setSpeed(speed);
+ if (mounted) {
+ setState(() => _playbackSpeed = speed);
+ }
  }
 
  String _formatSpeed(double speed) {
-  return '${speed == speed.roundToDouble() ? speed.toStringAsFixed(0) : speed}x';
+ return '${speed == speed.roundToDouble() ? speed.toStringAsFixed(0) : speed}x';
  }
 
  late StreamSubscription<PlayerState> _playerStateSub;
@@ -186,20 +186,41 @@ class _MawlanaShaykhNazimDuaPageState extends State<MawlanaShaykhNazimDuaPage> {
  for (final m in matches) {
  final attrs = m.group(1) ?? '';
  final inner = (m.group(2) ?? '').trim();
- if (inner.isEmpty) continue;
+
+ // WordPress can return visually empty paragraphs containing <br>,
+ // &nbsp;, or formatting-only HTML. Do not let these consume a timestamp.
+ final visibleText = inner
+     .replaceAll(RegExp(r'<!--[\s\S]*?-->'), '')
+     .replaceAll(RegExp(r'<[^>]*>'), '')
+     .replaceAll(
+       RegExp(r'&(?:nbsp|#0*160|#x0*a0);', caseSensitive: false),
+       '',
+     )
+     .replaceAll(
+       RegExp(r'(?:&#8203;|&#x200b;|&ZeroWidthSpace;)', caseSensitive: false),
+       '',
+     )
+     .replaceAll(RegExp(r'[\s\u200B\uFEFF]+'), '');
+ if (visibleText.isEmpty) continue;
 
  final isArabic =
- attrs.contains('arabic-content') || attrs.contains('lang="ar"');
+     RegExp(r'\barabic-content\b', caseSensitive: false)
+         .hasMatch(attrs) ||
+     RegExp(
+       r'''\blang\s*=\s*["']?ar(?:[-_][^"']*)?["']?''',
+       caseSensitive: false,
+     ).hasMatch(attrs);
+
  final styledInner = inner.replaceAllMapped(
- RegExp(r'([\uFDFA\uFDFB])'),
- (s) =>
- '<span style="font-family: \'Neirizi\'; font-size: 20px;">${s[1]}</span>',
+   RegExp(r'([\uFDFA\uFDFB])'),
+   (s) =>
+       '<span style="font-family: \'Neirizi\'; font-size: 20px;">${s[1]}</span>',
  );
 
  if (isArabic) {
- arList.add(styledInner);
+   arList.add(styledInner);
  } else {
- enList.add(styledInner);
+   enList.add(styledInner);
  }
  }
 
@@ -500,47 +521,47 @@ class _MawlanaShaykhNazimDuaPageState extends State<MawlanaShaykhNazimDuaPage> {
  ),
  const SizedBox(width: 8),
  PopupMenuButton<double>(
-  tooltip: 'Playback speed',
-  initialValue: _playbackSpeed,
-  onSelected: _setPlaybackSpeed,
-  itemBuilder: (context) => _speedOptions.map((speed) {
-   return PopupMenuItem<double>(
-    value: speed,
-    child: Row(
-     children: [
-      if (_playbackSpeed == speed)
-       const Icon(
-        Icons.check,
-        color: AppColors.gold,
-        size: 18,
-       )
-      else
-       const SizedBox(width: 18),
-      const SizedBox(width: 8),
-      Text(_formatSpeed(speed)),
-     ],
-    ),
-   );
-  }).toList(),
-  child: Container(
-   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-   decoration: BoxDecoration(
-    color: AppColors.gold.withValues(alpha: 0.12),
-    borderRadius: BorderRadius.circular(10),
-    border: Border.all(
-     color: AppColors.gold.withValues(alpha: 0.5),
-    ),
-   ),
-   child: Text(
-    _formatSpeed(_playbackSpeed),
-    style: const TextStyle(
-     fontFamily: 'Nunito',
-     fontSize: 13,
-     fontWeight: FontWeight.w800,
-     color: AppColors.gold,
-    ),
-   ),
-  ),
+ tooltip: 'Playback speed',
+ initialValue: _playbackSpeed,
+ onSelected: _setPlaybackSpeed,
+ itemBuilder: (context) => _speedOptions.map((speed) {
+ return PopupMenuItem<double>(
+ value: speed,
+ child: Row(
+ children: [
+ if (_playbackSpeed == speed)
+ const Icon(
+ Icons.check,
+ color: AppColors.gold,
+ size: 18,
+ )
+ else
+ const SizedBox(width: 18),
+ const SizedBox(width: 8),
+ Text(_formatSpeed(speed)),
+ ],
+ ),
+ );
+ }).toList(),
+ child: Container(
+ padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+ decoration: BoxDecoration(
+ color: AppColors.gold.withValues(alpha: 0.12),
+ borderRadius: BorderRadius.circular(10),
+ border: Border.all(
+ color: AppColors.gold.withValues(alpha: 0.5),
+ ),
+ ),
+ child: Text(
+ _formatSpeed(_playbackSpeed),
+ style: const TextStyle(
+ fontFamily: 'Nunito',
+ fontSize: 13,
+ fontWeight: FontWeight.w800,
+ color: AppColors.gold,
+ ),
+ ),
+ ),
  ),
  ],
  ),
@@ -654,3 +675,4 @@ class _MawlanaShaykhNazimDuaPageState extends State<MawlanaShaykhNazimDuaPage> {
  );
  }
 }
+
