@@ -146,7 +146,7 @@ class _AsarPageState extends State<AsarPage> {
 
   Future<void> _getData() async {
     try {
-      final result = await ApiService().getPages('asr-salah');
+      final result = await ApiService().getPages('asar-salah');
       if (!mounted) return;
       setState(() {
         _posts = result ?? [];
@@ -159,6 +159,90 @@ class _AsarPageState extends State<AsarPage> {
         _isLoading = false;
       });
     }
+  }
+
+  String _formatHtml(String rawHtml, bool isDark) {
+    final titleColor = isDark ? '#4ADE80' : '#0E7C3A';
+
+    var html = rawHtml.replaceAll(
+      RegExp(r'<style\b[^>]*>[\s\S]*?</style>', caseSensitive: false),
+      '',
+    );
+
+    html = html.replaceAllMapped(
+      RegExp(
+        r'<strong\b([^>]*)>(.*?)</strong>',
+        caseSensitive: false,
+        dotAll: true,
+      ),
+      (m) => '<strong${m[1]} style="color: $titleColor;">${m[2]}</strong>',
+    );
+    html = html.replaceAllMapped(
+      RegExp(r'<mark\b[^>]*>(.*?)</mark>', caseSensitive: false, dotAll: true),
+      (m) => '<span style="color: $titleColor; font-weight: 700;">${m[1]}</span>',
+    );
+
+    final enTitleRegex = RegExp(
+      r'((?:^|>|<br\s*/?>)\s*)(~?\s*(?:'
+      r'[ṢS]al[āa]tu\s+(?:al-Asr|as-sunnah|as-Sunnah|l-far[ḍd]|al-Munjiyah(?:/Tunj[īi]n[āa])?)(?:\s*\([^)]*\))?'
+      r'|Kalimat\s+ash-Shah[āa]dah\s*:?'
+      r'|Du[ʿ‘’\x27]?[āa][ʾ’\x27]?(?:\s+al-Qun[ūu]t\.?|\s+after\s+the\s+Adhan|\s+recited\s+by\s+the\s+imam)?\s*:?'
+      r'|Ihd[āa][’\x27]?\s*:?'
+      r'|Adhan\s*:?'
+      r'|Iqamat\s+a[sṣ]-[sṣ]al[āa]h\.?'
+      r'|Tasb[īi][ḥh]\s*:?'
+      r'|Al-Istighf[āa]r\s*:?'
+      r'|[ṢS]alaw[āa]t(?:\s*\([^)]*\))?'
+      r'|Surah\s+[A-Za-z\-]+(?:\s*\([^)]*\))?'
+      r'|Surat\s+Y[āa]-S[īi]n\s*:?'
+      r'|Al-F[āa]ti[ḥh]ah(?:\s*\([^)]*\))?\.?'
+      r'|The\s+Imam\s+continues[^:<]*:?'
+      r'|Lie\s+down[^:<]*:?'
+      r'|Get\s+up[^:<]*:?'
+      r'))',
+      caseSensitive: false,
+    );
+
+    html = html.replaceAllMapped(
+      enTitleRegex,
+      (m) =>
+          '${m[1]}<span style="color: $titleColor; font-weight: 700;">${m[2]}</span>',
+    );
+
+    const d = r'[\u064B-\u065F\u0670\u0640]*';
+    final arTitleRegex = RegExp(
+      '((?:^|>|<br\\s*/?>)\\s*)(~?\\s*(?:'
+      'ص$dل$dا$dة$d\\s+ا$dل$dع$dص$dر$d(?:\\s*\\([^)]*\\))?'
+      '|ص$dل$dا$dة$d\\s+ا$dل$dس$dن$dة$d(?:\\s*\\([^)]*\\))?'
+      '|ص$dل$dا$dة$d\\s+ا$dل$dف$dر$dض$d(?:\\s*\\([^)]*\\))?'
+      '|ك$dل$dم$dة$d\\s+ا$dل$dش$dه$dا$dد$dة$d\\s*:?'
+      '|د$dع$dا$dء$d(?:\\s+ا$dل$dق$dن$dو$dت$d)?\\s*:?'
+      '|ا$dل$dد$dع$dا$dء$d\\s*:?'
+      '|إ$dه$dد$dا$dء$d\\s*:?'
+      '|ا$dه$dد$dا$dء$d\\s*:?'
+      '|إ$dق$dا$dم$dة$d\\s+ا$dل$dص$dل$dا$dة$d'
+      '|ا$dل$dت$dس$dب$dي$dح$d\\s*:?'
+      '|ت$dس$dب$dي$dح$d\\s*:?'
+      '|ا$dل$dا$dس$dت$dغ$dف$dا$dر$d\\s*:?'
+      '|ص$dل$dو$dا$dت$d(?:\\s*\\([^)]*\\))?'
+      '|س$dو$dر$dة$d\\s+[^<:.\\n(]+(?:\\s*\\([^)]*\\))?\\s*:?'
+      '|ا$dل$dف$dا$dت$dح$dة$d(?:\\s*\\([^)]*\\))?'
+      '))',
+    );
+
+    html = html.replaceAllMapped(
+      arTitleRegex,
+      (m) =>
+          '${m[1]}<span style="color: $titleColor; font-weight: 700;">${m[2]}</span>',
+    );
+
+    html = html.replaceAllMapped(
+      RegExp(r'([\uFDFA\uFDFB])'),
+      (m) =>
+          '<span style="font-family: \'Neirizi\'; font-size: 20px;">${m[1]}</span>',
+    );
+
+    return html;
   }
 
   @override
@@ -595,49 +679,173 @@ class _AsarPageState extends State<AsarPage> {
         child: CircularProgressIndicator(color: AppColors.gold),
       );
     }
-    if (_error != null) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.wifi_off_rounded, color: AppColors.gold, size: 48),
-            const SizedBox(height: 16),
-            const Text(
-              'Could not load content',
-              style: TextStyle(fontFamily: 'Nunito', fontSize: 16),
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: () => setState(() {
-                _isLoading = true;
-                _error = null;
-                _getData();
-              }),
-              child: const Text('Try Again'),
-            ),
-          ],
-        ),
-      );
-    }
-    if (_posts.isEmpty) {
-      return Center(
-        child: Text(
-          'No content found.',
-          style: TextStyle(
-            fontFamily: 'Nunito',
-            color: isDark ? AppColors.darkSubText : AppColors.lightSubText,
-          ),
-        ),
-      );
-    }
+    if (_error != null) return _buildError();
+    if (_posts.isEmpty) return _buildEmpty(isDark);
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
-        children: _posts
-            .map((post) => Html(data: post.content))
-            .toList(),
+        children: _posts.map((post) => _buildContent(post, isDark)).toList(),
       ),
     );
   }
+
+  Widget _buildContent(WordpressPost post, bool isDark) {
+    final dividerColor = isDark
+        ? Colors.white.withValues(alpha: 0.08)
+        : Colors.black.withValues(alpha: 0.08);
+
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(AppTheme.cardRadius),
+        boxShadow: isDark
+            ? AppShadows.cardShadowDark
+            : AppShadows.cardShadowLight,
+      ),
+      child: LayoutBuilder(
+        builder: (context, constraints) => SizedBox(
+          width: constraints.maxWidth,
+          child: Html(
+            data: _formatHtml(post.content, isDark),
+            style: {
+              'body': Style(
+                fontFamily: 'Nunito',
+                fontSize: FontSize(16),
+                color: isDark ? AppColors.darkText : AppColors.lightText,
+                lineHeight: LineHeight(1.75),
+                margin: Margins.zero,
+                padding: HtmlPaddings.zero,
+              ),
+              'p': Style(
+                color: isDark ? AppColors.darkText : AppColors.lightText,
+                fontSize: FontSize(16),
+                lineHeight: LineHeight(1.75),
+                padding: HtmlPaddings.only(bottom: 14),
+                margin: Margins.only(bottom: 14),
+                border: Border(
+                  bottom: BorderSide(color: dividerColor, width: 0.8),
+                ),
+                display: _showArabic ? Display.none : Display.block,
+                direction: TextDirection.ltr,
+                textAlign: TextAlign.left,
+              ),
+              'p.arabic-content': Style(
+                fontFamily: 'Neirizi',
+                fontSize: FontSize(19),
+                fontWeight: FontWeight.w500,
+                lineHeight: LineHeight(2.1),
+                direction: TextDirection.rtl,
+                display: _showArabic ? Display.block : Display.none,
+                textAlign: TextAlign.right,
+                padding: HtmlPaddings.only(bottom: 16),
+                margin: Margins.only(bottom: 16),
+                border: Border(
+                  bottom: BorderSide(color: dividerColor, width: 0.8),
+                ),
+                color: isDark ? AppColors.darkText : AppColors.lightText,
+              ),
+              '*[lang="ar"]': Style(
+                fontFamily: 'Neirizi',
+                fontSize: FontSize(19),
+                fontWeight: FontWeight.w500,
+                lineHeight: LineHeight(2.1),
+                direction: TextDirection.rtl,
+                display: _showArabic ? Display.block : Display.none,
+                textAlign: TextAlign.right,
+                padding: HtmlPaddings.only(bottom: 16),
+                margin: Margins.only(bottom: 16),
+                border: Border(
+                  bottom: BorderSide(color: dividerColor, width: 0.8),
+                ),
+                color: isDark ? AppColors.darkText : AppColors.lightText,
+              ),
+              'p.has-large-font-size': Style(
+                fontFamily: 'Neirizi',
+                fontSize: FontSize(19),
+                fontWeight: FontWeight.w500,
+                lineHeight: LineHeight(2.1),
+                direction: TextDirection.rtl,
+                display: _showArabic ? Display.block : Display.none,
+                textAlign: TextAlign.right,
+                padding: HtmlPaddings.only(bottom: 16),
+                margin: Margins.only(bottom: 16),
+                border: Border(
+                  bottom: BorderSide(color: dividerColor, width: 0.8),
+                ),
+                color: isDark ? AppColors.darkText : AppColors.lightText,
+              ),
+              'div': Style(
+                color: isDark ? AppColors.darkText : AppColors.lightText,
+              ),
+              'h1': Style(
+                fontFamily: 'Poppins',
+                color: AppColors.gold,
+                fontSize: FontSize(24),
+                fontWeight: FontWeight.w700,
+                margin: Margins.only(bottom: 16),
+              ),
+              'h2': Style(
+                fontFamily: 'Poppins',
+                color: AppColors.gold,
+                fontSize: FontSize(21),
+                fontWeight: FontWeight.w700,
+              ),
+              'h3': Style(
+                fontFamily: 'Poppins',
+                color: AppColors.gold,
+                fontSize: FontSize(19),
+                fontWeight: FontWeight.w700,
+              ),
+              'h4': Style(
+                fontFamily: 'Poppins',
+                color: AppColors.gold,
+                fontSize: FontSize(17),
+                fontWeight: FontWeight.w700,
+              ),
+              'img': Style(
+                width: Width(100, Unit.percent),
+                display: Display.block,
+              ),
+            },
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildError() => Center(
+    child: Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        const Icon(Icons.wifi_off_rounded, color: AppColors.gold, size: 48),
+        const SizedBox(height: 16),
+        const Text(
+          'Could not load content',
+          style: TextStyle(fontFamily: 'Nunito', fontSize: 16),
+        ),
+        const SizedBox(height: 24),
+        ElevatedButton(
+          onPressed: () => setState(() {
+            _isLoading = true;
+            _error = null;
+            _getData();
+          }),
+          child: const Text('Try Again'),
+        ),
+      ],
+    ),
+  );
+
+  Widget _buildEmpty(bool isDark) => Center(
+    child: Text(
+      'No content found.',
+      style: TextStyle(
+        fontFamily: 'Nunito',
+        color: isDark ? AppColors.darkSubText : AppColors.lightSubText,
+      ),
+    ),
+  );
 }
