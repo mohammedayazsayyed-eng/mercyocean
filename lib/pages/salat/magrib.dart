@@ -146,7 +146,7 @@ class _MagribPageState extends State<MagribPage> {
 
   Future<void> _getData() async {
     try {
-      final result = await ApiService().getPages('magrib-salah');
+      final result = await ApiService().getPages('maghrib-salah');
       if (!mounted) return;
       setState(() {
         _posts = result ?? [];
