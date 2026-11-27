@@ -14,8 +14,8 @@ class MagribPage extends StatefulWidget {
 }
 
 class _MagribPageState extends State<MagribPage> {
-  static const String _mulkAudioAsset =
-      'assets/audio/surat_al_mulk_shaykh_muhammad.mp3';
+  static const String _sajdahAudioAsset =
+      'assets/audio/surat_as_sajdah_shaykh_muhammad.mp3';
   static const List<double> _speedOptions = [1.0, 1.25, 1.5, 1.75, 2.0, 3.0];
 
   List<WordpressPost> _posts = [];
@@ -32,7 +32,7 @@ class _MagribPageState extends State<MagribPage> {
   bool _isPlaying = false;
   bool _wasPlayingBeforeSeek = false;
   bool _isAudioLoading = true;
-  bool _showMulkPlayer = false;
+  bool _showSajdahPlayer = false;
   Duration _duration = Duration.zero;
   double _playbackSpeed = 1.0;
 
@@ -75,17 +75,17 @@ class _MagribPageState extends State<MagribPage> {
     });
 
     try {
-      await _audioPlayer.setAsset(_mulkAudioAsset);
+      await _audioPlayer.setAsset(_sajdahAudioAsset);
     } catch (e) {
-      debugPrint('Surat Al-Mulk audio error: $e');
+      debugPrint('Surat As-Sajdah audio error: $e');
     } finally {
       if (mounted) setState(() => _isAudioLoading = false);
     }
   }
 
-  Future<void> _toggleOrPlayMulkFromTop() async {
-    if (!_showMulkPlayer) {
-      setState(() => _showMulkPlayer = true);
+  Future<void> _toggleOrPlaySajdahFromTop() async {
+    if (!_showSajdahPlayer) {
+      setState(() => _showSajdahPlayer = true);
     }
     if (_isAudioLoading) return;
     if (_isPlaying) {
@@ -260,8 +260,8 @@ class _MagribPageState extends State<MagribPage> {
           child: Column(
             children: [
               _buildAppBar(context, isDark),
-              if (_showMulkPlayer || _isPlaying)
-                RepaintBoundary(child: _buildStickyMulkBar(isDark)),
+              if (_showSajdahPlayer || _isPlaying)
+                RepaintBoundary(child: _buildStickySajdahBar(isDark)),
               Expanded(
                 child: RepaintBoundary(child: _buildBody(context, isDark)),
               ),
@@ -272,10 +272,10 @@ class _MagribPageState extends State<MagribPage> {
     );
   }
 
-  Widget _buildMulkTopPill(bool isDark) {
+  Widget _buildSajdahTopPill(bool isDark) {
     final active = _isPlaying;
     return GestureDetector(
-      onTap: _toggleOrPlayMulkFromTop,
+      onTap: _toggleOrPlaySajdahFromTop,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
         decoration: BoxDecoration(
@@ -302,7 +302,7 @@ class _MagribPageState extends State<MagribPage> {
             ),
             const SizedBox(width: 3),
             Text(
-              'Mulk',
+              'Sajdah',
               style: TextStyle(
                 fontFamily: 'Nunito',
                 fontSize: 12,
@@ -316,7 +316,7 @@ class _MagribPageState extends State<MagribPage> {
     );
   }
 
-  Widget _buildStickyMulkBar(bool isDark) {
+  Widget _buildStickySajdahBar(bool isDark) {
     final maxSeconds =
         _duration.inSeconds > 0 ? _duration.inSeconds.toDouble() : 1.0;
 
@@ -341,7 +341,7 @@ class _MagribPageState extends State<MagribPage> {
             children: [
               const Expanded(
                 child: Text(
-                  "Surat Al-Mulk • Shaykh Muhammad",
+                  "Surat As-Sajdah • Shaykh Muhammad",
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
@@ -356,7 +356,7 @@ class _MagribPageState extends State<MagribPage> {
                 onTap: () async {
                   _wasPlayingBeforeSeek = false;
                   await _audioPlayer.pause();
-                  if (mounted) setState(() => _showMulkPlayer = false);
+                  if (mounted) setState(() => _showSajdahPlayer = false);
                 },
                 child: Icon(
                   Icons.close_rounded,
@@ -370,7 +370,7 @@ class _MagribPageState extends State<MagribPage> {
           Row(
             children: [
               GestureDetector(
-                onTap: _toggleOrPlayMulkFromTop,
+                onTap: _toggleOrPlaySajdahFromTop,
                 child: Container(
                   width: 42,
                   height: 42,
@@ -594,7 +594,7 @@ class _MagribPageState extends State<MagribPage> {
             ),
           ),
           const SizedBox(width: 8),
-          _buildMulkTopPill(isDark),
+          _buildSajdahTopPill(isDark),
           const SizedBox(width: 8),
           GestureDetector(
             onTap: () => setState(() => _showArabic = !_showArabic),
