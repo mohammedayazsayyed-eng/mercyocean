@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_html/flutter_html.dart';
 import 'package:just_audio/just_audio.dart';
-import '../models/wordpress_post_model.dart';
 import '../service/api_service.dart';
 import '../config/app_theme.dart';
 
@@ -31,17 +30,13 @@ class MawlanaShaykhNazimDuaPage extends StatefulWidget {
 }
 
 class _MawlanaShaykhNazimDuaPageState extends State<MawlanaShaykhNazimDuaPage> {
-  // Uses local offline MP3 by default.
-  // To stream from WordPress/Cloudflare instead, paste the https:// URL here:
   static const String _audioSource = 'assets/audio/mawlana_shaykh_nazim_dua.mp3';
 
-  // Estimated/placeholder start timestamps (in seconds) for each of the 22 Dua paragraphs — tune as desired
   static const List<int> _segmentSeconds = [
     0, 8, 22, 40, 60, 76, 100, 142, 167, 189, 215,
     243, 272, 288, 323, 339, 371, 390, 407, 423, 454, 479,
   ];
 
-  // English translations for each of the 22 Dua segments
   static const List<String> _segmentTranslations = [
     'Glory be to my Lord, the Most High, the Supreme, the Bestower. In the name of Allah, the Most Gracious, the Most Merciful.',
     'O our Lord, to You belongs all praise—a praise everlasting with Your eternity. Glory be to You; we cannot count the praise due to You; You are as You have praised Yourself.',
@@ -67,6 +62,7 @@ class _MawlanaShaykhNazimDuaPageState extends State<MawlanaShaykhNazimDuaPage> {
     'Glory be to your Lord, Lord of Might, above what they describe, and peace be upon the messengers, and praise be to Allah, Lord of all worlds. Our Lord, accept from us, pardon us, forgive us, have mercy upon us, turn to us in mercy, guide us, water us, and mend our affairs and the affairs of the Muslims—by the sanctity of the One upon whom You revealed Sūrah al-Fātiḥah.',
   ];
 
+  final ApiService _apiService = ApiService();
   List<_DuaSegment> _segments = [];
   List<GlobalKey> _segmentKeys = [];
   bool _isLoading = true;
@@ -76,12 +72,16 @@ class _MawlanaShaykhNazimDuaPageState extends State<MawlanaShaykhNazimDuaPage> {
   late AudioPlayer _audioPlayer;
   final ValueNotifier<Duration> _positionNotifier =
       ValueNotifier<Duration>(Duration.zero);
+  final ValueNotifier<double?> _dragSecondsNotifier =
+      ValueNotifier<double?>(null);
   final ValueNotifier<int> _activeIndexNotifier = ValueNotifier<int>(-1);
 
   bool _isPlaying = false;
+  bool _wasPlayingBeforeSeek = false;
   bool _isAudioLoading = true;
   Duration _duration = Duration.zero;
   int _lastScrolledIndex = -1;
+  DateTime _pauseAutoScrollUntil = DateTime.fromMillisecondsSinceEpoch(0);
 
   static const List<double> _speedOptions = [1.0, 1.25, 1.5, 1.75, 2.0, 3.0];
   double _playbackSpeed = 1.0;
@@ -96,6 +96,16 @@ class _MawlanaShaykhNazimDuaPageState extends State<MawlanaShaykhNazimDuaPage> {
     _audioPlayer = AudioPlayer();
     _initAudio();
     _getData();
+  }
+
+  void _pauseAutoScrollTemporarily([
+    Duration duration = const Duration(seconds: 3),
+  ]) {
+    _pauseAutoScrollUntil = DateTime.now().add(duration);
+  }
+
+  void _resumeAutoScrollImmediately() {
+    _pauseAutoScrollUntil = DateTime.fromMillisecondsSinceEpoch(0);
   }
 
   Future<void> _setPlaybackSpeed(double speed) async {
@@ -126,13 +136,19 @@ class _MawlanaShaykhNazimDuaPageState extends State<MawlanaShaykhNazimDuaPage> {
 
     _positionSub = _audioPlayer.positionStream.listen((pos) {
       if (!mounted) return;
+      if (_dragSecondsNotifier.value != null) return;
+
       _positionNotifier.value = pos;
       final newIndex = _computeActiveIndex(pos);
       if (_isPlaying || pos > Duration.zero) {
         if (_activeIndexNotifier.value != newIndex) {
           _activeIndexNotifier.value = newIndex;
         }
-        if (_isPlaying && newIndex >= 0 && newIndex != _lastScrolledIndex) {
+        final canAutoScroll = DateTime.now().isAfter(_pauseAutoScrollUntil);
+        if (_isPlaying &&
+            canAutoScroll &&
+            newIndex >= 0 &&
+            newIndex != _lastScrolledIndex) {
           _lastScrolledIndex = newIndex;
           _scrollToActiveSegment(newIndex);
         }
@@ -177,16 +193,57 @@ class _MawlanaShaykhNazimDuaPageState extends State<MawlanaShaykhNazimDuaPage> {
     if (ctx != null) {
       Scrollable.ensureVisible(
         ctx,
-        duration: const Duration(milliseconds: 450),
-        curve: Curves.easeInOut,
+        duration: const Duration(milliseconds: 350),
+        curve: Curves.easeOut,
         alignment: 0.25,
       );
     }
   }
 
+  Future<void> _handleSeekStart(double value) async {
+    _wasPlayingBeforeSeek = _isPlaying;
+    _dragSecondsNotifier.value = value;
+    _activeIndexNotifier.value =
+        _computeActiveIndex(Duration(seconds: value.round()));
+    if (_isPlaying) {
+      await _audioPlayer.pause();
+    }
+  }
+
+  void _handleSeekChanged(double value) {
+    _dragSecondsNotifier.value = value;
+    final idx = _computeActiveIndex(Duration(seconds: value.round()));
+    if (_activeIndexNotifier.value != idx) {
+      _activeIndexNotifier.value = idx;
+    }
+  }
+
+  Future<void> _handleSeekEnd(double value) async {
+    final target = Duration(seconds: value.round());
+    final newIndex = _computeActiveIndex(target);
+    _positionNotifier.value = target;
+    _activeIndexNotifier.value = newIndex;
+    _lastScrolledIndex = newIndex;
+    _resumeAutoScrollImmediately();
+
+    await _audioPlayer.seek(target);
+    _dragSecondsNotifier.value = null;
+
+    if (mounted) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _scrollToActiveSegment(newIndex);
+      });
+    }
+
+    if (_wasPlayingBeforeSeek && mounted) {
+      _wasPlayingBeforeSeek = false;
+      await _audioPlayer.play();
+    }
+  }
+
   Future<void> _getData() async {
     try {
-      final result = await ApiService().getPages('mawlana-shaykh-nazim-dua');
+      final result = await _apiService.getPages('mawlana-shaykh-nazim-dua');
       if (!mounted) return;
       final posts = result ?? [];
       final combinedHtml = posts.map((p) => p.content).join('\n');
@@ -203,6 +260,14 @@ class _MawlanaShaykhNazimDuaPageState extends State<MawlanaShaykhNazimDuaPage> {
         _isLoading = false;
       });
     }
+  }
+
+  bool _isEnglishTranslation(String plainText) {
+    final englishWordMatches = RegExp(
+      r'\b(the|and|of|to|from|upon|with|your|you|our|their|mercy|forgive|blessings|lord|prophet|souls|worlds|hearts|sins|grant|ask|praise|glory|send|peace)\b',
+      caseSensitive: false,
+    ).allMatches(plainText).length;
+    return englishWordMatches >= 3;
   }
 
   List<_DuaSegment> _parseSegments(String rawHtml) {
@@ -227,19 +292,20 @@ class _MawlanaShaykhNazimDuaPageState extends State<MawlanaShaykhNazimDuaPage> {
       final attrs = m.group(1) ?? '';
       final inner = (m.group(2) ?? '').trim();
 
-      final visibleText = inner
+      final plainText = inner
           .replaceAll(RegExp(r'<!--[\s\S]*?-->'), '')
-          .replaceAll(RegExp(r'<[^>]*>'), '')
+          .replaceAll(RegExp(r'<[^>]*>'), ' ')
           .replaceAll(
             RegExp(r'&(?:nbsp|#0*160|#x0*a0);', caseSensitive: false),
-            '',
+            ' ',
           )
           .replaceAll(
             RegExp(r'(?:&#8203;|&#x200b;|&ZeroWidthSpace;)', caseSensitive: false),
             '',
           )
-          .replaceAll(RegExp(r'[\s\u200B\uFEFF]+'), '');
-      if (visibleText.isEmpty) continue;
+          .replaceAll(RegExp(r'[\s\u200B\uFEFF]+'), ' ')
+          .trim();
+      if (plainText.isEmpty) continue;
 
       final isArabic =
           RegExp(r'\barabic-content\b', caseSensitive: false).hasMatch(attrs) ||
@@ -256,7 +322,7 @@ class _MawlanaShaykhNazimDuaPageState extends State<MawlanaShaykhNazimDuaPage> {
 
       if (isArabic) {
         arList.add(styledInner);
-      } else {
+      } else if (!_isEnglishTranslation(plainText)) {
         enList.add(styledInner);
       }
     }
@@ -270,7 +336,9 @@ class _MawlanaShaykhNazimDuaPageState extends State<MawlanaShaykhNazimDuaPage> {
     return List.generate(count, (i) {
       final sec = i < _segmentSeconds.length
           ? _segmentSeconds[i]
-          : (i > 0 ? _segmentSeconds.last + (i - _segmentSeconds.length + 1) * 15 : 0);
+          : (i > 0
+              ? _segmentSeconds.last + (i - _segmentSeconds.length + 1) * 15
+              : 0);
       final trText =
           i < _segmentTranslations.length ? _segmentTranslations[i] : '';
       return _DuaSegment(
@@ -288,6 +356,7 @@ class _MawlanaShaykhNazimDuaPageState extends State<MawlanaShaykhNazimDuaPage> {
     _positionSub.cancel();
     _durationSub.cancel();
     _positionNotifier.dispose();
+    _dragSecondsNotifier.dispose();
     _activeIndexNotifier.dispose();
     _audioPlayer.dispose();
     super.dispose();
@@ -455,6 +524,7 @@ class _MawlanaShaykhNazimDuaPageState extends State<MawlanaShaykhNazimDuaPage> {
                     if (_isPlaying) {
                       await _audioPlayer.pause();
                     } else {
+                      _resumeAutoScrollImmediately();
                       await _audioPlayer.play();
                     }
                   },
@@ -497,64 +567,74 @@ class _MawlanaShaykhNazimDuaPageState extends State<MawlanaShaykhNazimDuaPage> {
             child: ValueListenableBuilder<Duration>(
               valueListenable: _positionNotifier,
               builder: (context, pos, _) {
-                final currentSeconds =
-                    pos.inSeconds.toDouble().clamp(0.0, maxSeconds);
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    SliderTheme(
-                      data: SliderTheme.of(context).copyWith(
-                        trackHeight: 3,
-                        thumbShape: const RoundSliderThumbShape(
-                          enabledThumbRadius: 6,
-                        ),
-                        overlayShape: const RoundSliderOverlayShape(
-                          overlayRadius: 12,
-                        ),
-                        activeTrackColor: AppColors.gold,
-                        inactiveTrackColor:
-                            AppColors.gold.withValues(alpha: 0.2),
-                        thumbColor: AppColors.gold,
-                      ),
-                      child: Slider(
-                        min: 0,
-                        max: maxSeconds,
-                        value: currentSeconds,
-                        onChanged: (value) {
-                          _audioPlayer.seek(Duration(seconds: value.toInt()));
-                        },
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 6),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            _formatDuration(pos),
-                            style: TextStyle(
-                              fontFamily: 'Nunito',
-                              fontSize: 11,
-                              color: isDark
-                                  ? AppColors.darkSubText
-                                  : AppColors.lightSubText,
+                return ValueListenableBuilder<double?>(
+                  valueListenable: _dragSecondsNotifier,
+                  builder: (context, dragSec, _) {
+                    final displayedDuration = dragSec != null
+                        ? Duration(seconds: dragSec.round())
+                        : pos;
+                    final currentSeconds = (dragSec ??
+                            pos.inSeconds.toDouble())
+                        .clamp(0.0, maxSeconds);
+
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        SliderTheme(
+                          data: SliderTheme.of(context).copyWith(
+                            trackHeight: 3,
+                            thumbShape: const RoundSliderThumbShape(
+                              enabledThumbRadius: 6,
                             ),
-                          ),
-                          Text(
-                            _formatDuration(_duration),
-                            style: TextStyle(
-                              fontFamily: 'Nunito',
-                              fontSize: 11,
-                              color: isDark
-                                  ? AppColors.darkSubText
-                                  : AppColors.lightSubText,
+                            overlayShape: const RoundSliderOverlayShape(
+                              overlayRadius: 12,
                             ),
+                            activeTrackColor: AppColors.gold,
+                            inactiveTrackColor:
+                                AppColors.gold.withValues(alpha: 0.2),
+                            thumbColor: AppColors.gold,
                           ),
-                        ],
-                      ),
-                    ),
-                  ],
+                          child: Slider(
+                            min: 0,
+                            max: maxSeconds,
+                            value: currentSeconds,
+                            onChangeStart: _handleSeekStart,
+                            onChanged: _handleSeekChanged,
+                            onChangeEnd: _handleSeekEnd,
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 6),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                _formatDuration(displayedDuration),
+                                style: TextStyle(
+                                  fontFamily: 'Nunito',
+                                  fontSize: 11,
+                                  color: isDark
+                                      ? AppColors.darkSubText
+                                      : AppColors.lightSubText,
+                                ),
+                              ),
+                              Text(
+                                _formatDuration(_duration),
+                                style: TextStyle(
+                                  fontFamily: 'Nunito',
+                                  fontSize: 11,
+                                  color: isDark
+                                      ? AppColors.darkSubText
+                                      : AppColors.lightSubText,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    );
+                  },
                 );
               },
             ),
@@ -662,83 +742,97 @@ class _MawlanaShaykhNazimDuaPageState extends State<MawlanaShaykhNazimDuaPage> {
 
     final isArabic = _displayMode == _DuaDisplayMode.arabic;
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: ValueListenableBuilder<int>(
-        valueListenable: _activeIndexNotifier,
-        builder: (context, activeIdx, _) {
-          return Column(
-            children: List.generate(_segments.length, (index) {
-              final seg = _segments[index];
-              final isActive = index == activeIdx;
-              final contentHtml = _segmentContentForMode(seg);
-              if (contentHtml.isEmpty) return const SizedBox.shrink();
+    return NotificationListener<ScrollNotification>(
+      onNotification: (notification) {
+        if (notification is ScrollStartNotification &&
+            notification.dragDetails != null) {
+          _pauseAutoScrollTemporarily(const Duration(seconds: 3));
+        }
+        return false;
+      },
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: ValueListenableBuilder<int>(
+          valueListenable: _activeIndexNotifier,
+          builder: (context, activeIdx, _) {
+            return Column(
+              children: List.generate(_segments.length, (index) {
+                final seg = _segments[index];
+                final isActive = index == activeIdx;
+                final contentHtml = _segmentContentForMode(seg);
+                if (contentHtml.isEmpty) return const SizedBox.shrink();
 
-              return GestureDetector(
-                key: _segmentKeys[index],
-                onTap: () async {
-                  _lastScrolledIndex = index;
-                  _activeIndexNotifier.value = index;
-                  await _audioPlayer.seek(seg.startTime);
-                  if (!_isPlaying) {
-                    await _audioPlayer.play();
-                  }
-                },
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 250),
-                  width: double.infinity,
-                  margin: const EdgeInsets.only(bottom: 12),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 18,
-                    vertical: 14,
-                  ),
-                  decoration: BoxDecoration(
-                    color: isActive
-                        ? AppColors.gold.withValues(alpha: isDark ? 0.18 : 0.14)
-                        : (isDark
-                            ? AppColors.darkSurface
-                            : AppColors.lightSurface),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: isActive
-                          ? AppColors.gold
-                          : (isDark
-                              ? Colors.white.withValues(alpha: 0.06)
-                              : Colors.black.withValues(alpha: 0.06)),
-                      width: isActive ? 1.6 : 0.8,
-                    ),
-                    boxShadow: isActive
-                        ? AppShadows.goldGlow
-                        : (isDark
-                            ? AppShadows.cardShadowDark
-                            : AppShadows.cardShadowLight),
-                  ),
-                  child: Html(
-                    data: contentHtml,
-                    style: {
-                      'body': Style(
-                        fontFamily: isArabic ? 'Neirizi' : 'Nunito',
-                        fontSize: FontSize(isArabic ? 20 : 16),
-                        fontWeight:
-                            isArabic ? FontWeight.w500 : FontWeight.w400,
-                        color: isDark
-                            ? AppColors.darkText
-                            : AppColors.lightText,
-                        lineHeight: LineHeight(isArabic ? 2.1 : 1.75),
-                        direction:
-                            isArabic ? TextDirection.rtl : TextDirection.ltr,
-                        textAlign:
-                            isArabic ? TextAlign.right : TextAlign.left,
-                        margin: Margins.zero,
-                        padding: HtmlPaddings.zero,
+                return GestureDetector(
+                  key: _segmentKeys[index],
+                  onTap: () async {
+                    _resumeAutoScrollImmediately();
+                    _lastScrolledIndex = index;
+                    _activeIndexNotifier.value = index;
+                    await _audioPlayer.seek(seg.startTime);
+                    if (!_isPlaying) {
+                      await _audioPlayer.play();
+                    }
+                  },
+                  child: RepaintBoundary(
+                    child: Container(
+                      width: double.infinity,
+                      margin: const EdgeInsets.only(bottom: 12),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 18,
+                        vertical: 14,
                       ),
-                    },
+                      decoration: BoxDecoration(
+                        color: isActive
+                            ? AppColors.gold
+                                .withValues(alpha: isDark ? 0.18 : 0.14)
+                            : (isDark
+                                ? AppColors.darkSurface
+                                : AppColors.lightSurface),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: isActive
+                              ? AppColors.gold
+                              : (isDark
+                                  ? Colors.white.withValues(alpha: 0.06)
+                                  : Colors.black.withValues(alpha: 0.06)),
+                          width: isActive ? 1.6 : 0.8,
+                        ),
+                        boxShadow: isActive
+                            ? AppShadows.goldGlow
+                            : (isDark
+                                ? AppShadows.cardShadowDark
+                                : AppShadows.cardShadowLight),
+                      ),
+                      child: Html(
+                        data: contentHtml,
+                        style: {
+                          'body': Style(
+                            fontFamily: isArabic ? 'Neirizi' : 'Nunito',
+                            fontSize: FontSize(isArabic ? 20 : 16),
+                            fontWeight:
+                                isArabic ? FontWeight.w500 : FontWeight.w400,
+                            color: isDark
+                                ? AppColors.darkText
+                                : AppColors.lightText,
+                            lineHeight: LineHeight(isArabic ? 2.1 : 1.75),
+                            direction: isArabic
+                                ? TextDirection.rtl
+                                : TextDirection.ltr,
+                            textAlign: isArabic
+                                ? TextAlign.right
+                                : TextAlign.left,
+                            margin: Margins.zero,
+                            padding: HtmlPaddings.zero,
+                          ),
+                        },
+                      ),
+                    ),
                   ),
-                ),
-              );
-            }),
-          );
-        },
+                );
+              }),
+            );
+          },
+        ),
       ),
     );
   }
